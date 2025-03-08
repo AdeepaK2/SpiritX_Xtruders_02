@@ -360,11 +360,11 @@ export async function PATCH(request: NextRequest) {
 // GET endpoint to retrieve players
 export async function GET(request: NextRequest) {
   try {
-    // Get ID from query parameter: /api/player?id=123
-    const id = request.nextUrl.searchParams.get('id');
-    
     await connect();
-
+    
+    const id = request.nextUrl.searchParams.get('id');
+    const ids = request.nextUrl.searchParams.get('ids');
+    
     // If ID is provided, fetch specific player
     if (id) {
       // Validate the ID format
@@ -385,6 +385,24 @@ export async function GET(request: NextRequest) {
       }
       
       return NextResponse.json({ player }, { status: 200 });
+    }
+    
+    // If IDs are provided as comma-separated list, fetch multiple players
+    if (ids) {
+      console.log(`Fetching multiple players with ids: ${ids}`);
+      const playerIds = ids.split(',').filter(id => mongoose.Types.ObjectId.isValid(id));
+      
+      if (playerIds.length === 0) {
+        return NextResponse.json(
+          { error: 'No valid player IDs provided' },
+          { status: 400 }
+        );
+      }
+      
+      const players = await Player.find({ _id: { $in: playerIds } });
+      console.log(`Found ${players.length} players`);
+      
+      return NextResponse.json({ players }, { status: 200 });
     }
     
     // Otherwise return all players
