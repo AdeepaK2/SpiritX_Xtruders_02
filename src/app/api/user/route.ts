@@ -54,7 +54,12 @@ export async function POST(request: NextRequest) {
       username: username.trim(),
       email: email.trim(),
       password: hashedPassword,
-      budget: 9000000, // Explicitly set the default budget
+      profileImage: {  // Initialize with empty image data
+        data: null,
+        contentType: null,
+        uploadDate: null
+      },
+      budget: 9000000,
       accountCreationDate: new Date(),
       lastLoginDate: new Date()
     });
@@ -75,7 +80,7 @@ export async function POST(request: NextRequest) {
         user: {
           username: newUser.username,
           email: newUser.email,
-          budget: newUser.budget, // Include budget in response
+          budget: newUser.budget,
           accountCreationDate: newUser.accountCreationDate,
           lastLoginDate: newUser.lastLoginDate
         }
