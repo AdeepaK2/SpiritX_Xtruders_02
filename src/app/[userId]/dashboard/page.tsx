@@ -10,7 +10,8 @@ import SelectTeamView from '@/components/features/SelectTeamView';
 import UserDataView from '@/components/features/UserDataView';
 import TeamView from '@/components/features/TeamView'; 
 import BudgetView from '@/components/features/BudgetView';
-import LeaderboardView from '@/components/features/LeaderboardView'; // Import the new LeaderboardView
+import LeaderboardView from '@/components/features/LeaderboardView';
+import ChatbotView from '@/components/features/ChatbotView'; // Add this import
 import DashboardSidebar from '@/components/DashboardSidebar';
 
 // Add Team interface
@@ -82,7 +83,9 @@ const Dashboard = () => {
       case 'budget':
         return <BudgetView onNavigate={setActiveFeature} />; 
       case 'leaderboard':
-        return <LeaderboardView />; // Use the new LeaderboardView component
+        return <LeaderboardView />;
+      case 'chatbot':
+        return <ChatbotView />; // Add this case
       case 'userdata':
         return <UserDataView />;
       default:

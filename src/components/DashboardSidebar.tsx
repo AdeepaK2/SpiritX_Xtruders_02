@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { FaUsers, FaClipboardList, FaUserFriends, FaMoneyBillWave, FaTrophy, FaRobot, FaHome } from 'react-icons/fa';
+import { FaUsers, FaClipboardList, FaUserFriends, FaMoneyBillWave, FaTrophy, FaRobot, FaHome, FaUser } from 'react-icons/fa';
 
 interface DashboardSidebarProps {
   activeFeature: string;
@@ -19,7 +19,8 @@ const DashboardSidebar = ({ activeFeature, onFeatureSelect }: DashboardSidebarPr
     { path: 'team', label: 'Team', icon: <FaUserFriends className="text-xl mr-3" /> },
     { path: 'budget', label: 'Budget View', icon: <FaMoneyBillWave className="text-xl mr-3" /> },
     { path: 'leaderboard', label: 'Leaderboard', icon: <FaTrophy className="text-xl mr-3" /> },
-    { path: 'userdata', label: 'User Details', icon: <FaRobot className="text-xl mr-3" /> },
+    { path: 'chatbot', label: 'Spiriter AI', icon: <FaRobot className="text-xl mr-3" /> },
+    { path: 'userdata', label: 'User Details', icon: <FaUser className="text-xl mr-3" /> },
   ];
   
   // Check if a route is active

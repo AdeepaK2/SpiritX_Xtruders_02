@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { FaTrophy, FaMedal, FaUser, FaSpinner, FaExclamationTriangle, FaSearch, FaSync } from 'react-icons/fa';
+import useSWR from 'swr';
 
 interface Player {
   _id: string;
@@ -32,97 +33,67 @@ interface LeaderboardEntry {
   rank: number;
 }
 
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
 const LeaderboardView = () => {
   const params = useParams();
   const currentUserId = params.userId as string;
   
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchLeaderboardData = async () => {
-    try {
-      setRefreshing(true);
-      
-      // Fetch users
-      const usersResponse = await fetch('/api/user');
-      if (!usersResponse.ok) {
-        throw new Error('Failed to fetch users');
-      }
-      const usersData = await usersResponse.json();
-      const users = usersData.users || [];
-      
-      // Fetch teams
-      const teamsResponse = await fetch('/api/team');
-      if (!teamsResponse.ok) {
-        throw new Error('Failed to fetch teams');
-      }
-      const teamsData = await teamsResponse.json();
-      const teams = teamsData.teams || [];
-      
-      // Create leaderboard entries
-      const leaderboardData = users.map((user: User) => {
-        // Find user's team
-        const userTeam = teams.find((team: Team) => team.userId === user._id);
-        
-        // Calculate total points from team players
-        let totalPoints = 0;
-        let teamName = "No Team";
-        
-        if (userTeam) {
-          totalPoints = userTeam.players.reduce(
-            (sum: number, player: Player) => sum + (player.playerPoints || 0), 
-            0
-          );
-          teamName = userTeam.name;
-        }
-        
-        return {
-          _id: user._id,
-          username: user.username,
-          teamName,
-          totalPoints,
-          rank: 0 // Will be set after sorting
-        };
-      });
-      
-      // Sort by points (descending)
-      leaderboardData.sort((a: LeaderboardEntry, b: LeaderboardEntry) => b.totalPoints - a.totalPoints);
-      
-      // Assign ranks
-      leaderboardData.forEach((entry: LeaderboardEntry, index: number) => {
-        entry.rank = index + 1;
-      });
-      
-      setLeaderboard(leaderboardData);
-      setLastUpdated(new Date());
-    } catch (error) {
-      console.error('Error fetching leaderboard data:', error);
-      setError('Failed to load leaderboard data');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchLeaderboardData();
-    
-    // Set up polling every 30 seconds
-    const intervalId = setInterval(() => {
-      fetchLeaderboardData();
-    }, 30000);
-    
-    // Clean up interval on component unmount
-    return () => clearInterval(intervalId);
-  }, []);
+  // Use SWR to fetch and cache data with auto-revalidation
+  const { data: usersData, error: usersError, isLoading: usersLoading, mutate: refreshUsers } = 
+    useSWR('/api/user', fetcher, { refreshInterval: 30000 }); // Refresh every 30 seconds
   
-  const handleManualRefresh = () => {
-    fetchLeaderboardData();
+  const { data: teamsData, error: teamsError, isLoading: teamsLoading, mutate: refreshTeams } = 
+    useSWR('/api/team', fetcher, { refreshInterval: 30000 }); // Refresh every 30 seconds
+  
+  const loading = usersLoading || teamsLoading;
+  const error = usersError || teamsError;
+  
+  // Handle manual refresh
+  const handleRefresh = () => {
+    refreshUsers();
+    refreshTeams();
   };
+  
+  // Process data and create leaderboard
+  let leaderboard: LeaderboardEntry[] = [];
+  if (usersData?.users && teamsData?.teams) {
+    // Create leaderboard entries
+    leaderboard = usersData.users.map((user: User) => {
+      // Find user's team
+      const userTeam = teamsData.teams.find((team: Team) => team.userId === user._id);
+      
+      // Calculate total points from team players
+      let totalPoints = 0;
+      let teamName = "No Team";
+      
+      if (userTeam) {
+        totalPoints = userTeam.players.reduce(
+          (sum: number, player: Player) => sum + (player.playerPoints || 0), 
+          0
+        );
+        teamName = userTeam.name;
+      }
+      
+      return {
+        _id: user._id,
+        username: user.username,
+        teamName,
+        totalPoints,
+        rank: 0 // Will be set after sorting
+      };
+    });
+    
+    // Sort by points (descending)
+    leaderboard.sort((a: LeaderboardEntry, b: LeaderboardEntry) => b.totalPoints - a.totalPoints);
+    
+    // Assign ranks
+    leaderboard.forEach((entry: LeaderboardEntry, index: number) => {
+      entry.rank = index + 1;
+    });
+  }
   
   // Filter leaderboard based on search term
   const filteredLeaderboard = searchTerm 
@@ -173,9 +144,9 @@ const LeaderboardView = () => {
       <div className="h-full flex items-center justify-center">
         <div className="text-center p-6 bg-red-50 rounded-lg shadow">
           <FaExclamationTriangle className="text-4xl text-red-500 mx-auto mb-4" />
-          <p className="text-red-600 font-medium">{error}</p>
+          <p className="text-red-600 font-medium">Failed to load leaderboard data</p>
           <button 
-            onClick={() => window.location.reload()}
+            onClick={handleRefresh}
             className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
           >
             Try Again
@@ -192,18 +163,13 @@ const LeaderboardView = () => {
           <FaTrophy className="mr-3 text-yellow-500" /> Fantasy Cricket Leaderboard
         </h1>
         <div className="flex items-center gap-4">
-          <div className="text-sm text-gray-500">
-            {lastUpdated && (
-              <>Last updated: {lastUpdated.toLocaleTimeString()}</>
-            )}
-          </div>
           <button 
-            onClick={handleManualRefresh} 
-            disabled={refreshing}
-            className="p-2 bg-indigo-50 rounded-full hover:bg-indigo-100 transition-colors"
+            onClick={handleRefresh}
+            className="p-2 bg-indigo-50 rounded-full hover:bg-indigo-100 transition-colors flex items-center gap-2"
             title="Refresh leaderboard"
           >
-            <FaSync className={`text-indigo-600 ${refreshing ? 'animate-spin' : ''}`} />
+            <FaSync className="text-indigo-600" />
+            <span className="text-sm text-indigo-600">Refresh</span>
           </button>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
