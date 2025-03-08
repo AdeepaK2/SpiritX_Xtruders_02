@@ -474,3 +474,47 @@ export async function PATCH(request: NextRequest) {
     );
   }
 }
+
+// GET endpoint to retrieve players
+export async function GET(request: NextRequest) {
+  try {
+    // Get ID from query parameter: /api/player?id=123
+    const id = request.nextUrl.searchParams.get('id');
+    
+    await connect();
+
+    // If ID is provided, fetch specific player
+    if (id) {
+      // Validate the ID format
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return NextResponse.json(
+          { error: 'Invalid player ID format' },
+          { status: 400 }
+        );
+      }
+
+      const player = await Player.findById(id);
+      
+      if (!player) {
+        return NextResponse.json(
+          { error: 'Player not found' },
+          { status: 404 }
+        );
+      }
+      
+      return NextResponse.json({ player }, { status: 200 });
+    }
+    
+    // Otherwise return all players
+    const players = await Player.find({});
+    return NextResponse.json({ players }, { status: 200 });
+    
+  } catch (error) {
+    console.error('Error fetching players:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json(
+      { error: 'Error fetching players', details: errorMessage },
+      { status: 500 }
+    );
+  }
+}
