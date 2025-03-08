@@ -1,6 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
+import Image from 'next/image';
 import { FaUsers, FaClipboardList, FaUserFriends, FaMoneyBillWave, FaTrophy, FaRobot, FaHome, FaUser } from 'react-icons/fa';
 
 interface DashboardSidebarProps {
@@ -31,9 +32,15 @@ const DashboardSidebar = ({ activeFeature, onFeatureSelect }: DashboardSidebarPr
   return (
     <div className="h-full w-64 bg-gradient-to-b from-indigo-900 to-purple-900 text-white flex flex-col py-6 px-3 shadow-xl rounded-r-xl">
       <div className="mb-8 px-4">
-        <h2 className="text-2xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
-          SpiritX
-        </h2>
+        <div className="flex justify-center items-center">
+          <Image 
+            src="/logo.png" 
+            alt="SpiritX Logo" 
+            width={150} 
+            height={50}
+            className="object-contain"
+          />
+        </div>
       </div>
       <nav className="flex-1">
         <ul className="space-y-3">
