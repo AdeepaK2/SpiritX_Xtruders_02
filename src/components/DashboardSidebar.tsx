@@ -1,31 +1,30 @@
 'use client';
 
-import { useRouter, useParams, usePathname } from 'next/navigation';
-import { FaUsers, FaClipboardList, FaUserFriends, FaMoneyBillWave, FaTrophy, FaRobot } from 'react-icons/fa';
+import { useParams } from 'next/navigation';
+import { FaUsers, FaClipboardList, FaUserFriends, FaMoneyBillWave, FaTrophy, FaRobot, FaHome } from 'react-icons/fa';
 
-const Sidebar = () => {
-  const router = useRouter();
+interface DashboardSidebarProps {
+  activeFeature: string;
+  onFeatureSelect: (feature: string) => void;
+}
+
+const DashboardSidebar = ({ activeFeature, onFeatureSelect }: DashboardSidebarProps) => {
   const params = useParams();
-  const pathname = usePathname();
-  
   const userId = params.userId;
   
   const navItems = [
+    { path: '', label: 'Dashboard Home', icon: <FaHome className="text-xl mr-3" /> },
     { path: 'players', label: 'Players View', icon: <FaUsers className="text-xl mr-3" /> },
     { path: 'select-team', label: 'Select Your Team', icon: <FaClipboardList className="text-xl mr-3" /> },
     { path: 'team', label: 'Team View', icon: <FaUserFriends className="text-xl mr-3" /> },
     { path: 'budget', label: 'Budget View', icon: <FaMoneyBillWave className="text-xl mr-3" /> },
     { path: 'leaderboard', label: 'Leaderboard', icon: <FaTrophy className="text-xl mr-3" /> },
-    { path: 'spiriter', label: 'Spiriter (Chatbot)', icon: <FaRobot className="text-xl mr-3" /> },
+    { path: 'userdata', label: 'User Details', icon: <FaRobot className="text-xl mr-3" /> },
   ];
-  
-  const handleNavigation = (feature: string) => {
-    router.push(`/${userId}/dashboard/${feature}`);
-  };
   
   // Check if a route is active
   const isActive = (path: string) => {
-    return pathname.includes(`/dashboard/${path}`);
+    return activeFeature === path;
   };
   
   return (
@@ -40,7 +39,7 @@ const Sidebar = () => {
           {navItems.map((item) => (
             <li key={item.path}>
               <button
-                onClick={() => handleNavigation(item.path)}
+                onClick={() => onFeatureSelect(item.path)}
                 className={`w-full flex items-center px-4 py-3 rounded-lg transition-all duration-200 font-medium
                   ${isActive(item.path) 
                     ? 'bg-indigo-600 text-white shadow-md transform translate-x-1' 
@@ -57,4 +56,4 @@ const Sidebar = () => {
   );
 };
 
-export default Sidebar;
+export default DashboardSidebar;
