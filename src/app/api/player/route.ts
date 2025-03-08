@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connect from '@/utils/db';
 import Player, { IPlayer } from '@/models/playerSchema';
+import mongoose from 'mongoose';
+
 
 export const config = {
   api: {
@@ -9,7 +11,7 @@ export const config = {
 };
 
 // Helper function to calculate player statistics
-const calculatePlayerStats = (playerData: any) => {
+export const calculatePlayerStats = (playerData: any) => {
   const totalRuns = parseInt(playerData.totalRuns) || 0;
   const ballsFaced = parseInt(playerData.ballsFaced) || 1;
   const inningsPlayed = parseInt(playerData.inningsPlayed) || 1;
@@ -46,7 +48,7 @@ const calculatePlayerStats = (playerData: any) => {
 };
 
 // Function to normalize category to match enum values in schema
-const normalizeCategory = (category: string): 'Batsman' | 'Bowler' | 'All-rounder' => {
+export const normalizeCategory = (category: string): 'Batsman' | 'Bowler' | 'All-rounder' => {
   const normalized = category.toLowerCase().trim();
   
   if (normalized.includes('bat')) return 'Batsman';
@@ -58,7 +60,7 @@ const normalizeCategory = (category: string): 'Batsman' | 'Bowler' | 'All-rounde
 };
 
 // Process a single player data object
-const processPlayerData = (playerData: any) => {
+export const processPlayerData = (playerData: any) => {
   // Map field names from request format to schema format
   const mappedPlayer = {
     name: playerData.Name || playerData.name,
@@ -231,5 +233,244 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error processing request:', error);
     return NextResponse.json({ error: 'Error processing request' }, { status: 500 });
+  }
+}
+
+// DELETE endpoint to remove a player by ID
+export async function DELETE(request: NextRequest) {
+  try {
+    // Get ID from query parameter: /api/player?id=123
+    const id = request.nextUrl.searchParams.get('id');
+    
+    if (!id) {
+      return NextResponse.json({ error: 'Player ID is required' }, { status: 400 });
+    }
+
+    // Validate the ID format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json(
+        { error: 'Invalid player ID format' },
+        { status: 400 }
+      );
+    }
+
+    // Connect to database - ensure connection is established
+    await connect();
+
+    // Find and delete the player
+    const deletedPlayer = await Player.findByIdAndDelete(id);
+
+    if (!deletedPlayer) {
+      return NextResponse.json(
+        { error: 'Player not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(
+      { 
+        message: 'Player deleted successfully',
+        deletedPlayer: {
+          id: deletedPlayer._id,
+          name: deletedPlayer.name
+        }
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('Error deleting player:', error);
+    
+    // Provide more specific error information
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json(
+      { 
+        error: 'Error deleting player', 
+        details: errorMessage 
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// PATCH endpoint to update a player by ID
+export async function PATCH(request: NextRequest) {
+  try {
+    // Get ID from query parameter: /api/player?id=123
+    const id = request.nextUrl.searchParams.get('id');
+    
+    if (!id) {
+      return NextResponse.json({ error: 'Player ID is required' }, { status: 400 });
+    }
+
+    // Validate the ID format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json(
+        { error: 'Invalid player ID format' },
+        { status: 400 }
+      );
+    }
+
+    // Parse request body
+    let body;
+    try {
+      body = await request.json();
+      console.log("PATCH body received:", body);
+    } catch (parseError) {
+      console.error("Failed to parse JSON body:", parseError);
+      return NextResponse.json(
+        { error: 'Invalid JSON in request body' },
+        { status: 400 }
+      );
+    }
+
+    // Connect to database
+    console.log("Connecting to MongoDB...");
+    await connect();
+    console.log("MongoDB connection established");
+
+    // Find the player
+    console.log(`Finding player with ID: ${id}`);
+    const player = await Player.findById(id);
+    if (!player) {
+      console.log(`Player with ID ${id} not found`);
+      return NextResponse.json(
+        { error: 'Player not found' },
+        { status: 404 }
+      );
+    }
+    console.log(`Player found:`, player.toObject());
+
+    // Map fields from request to player model
+    const updatedFields: any = {};
+    const incrementFields: any = {};
+    
+    // Handle basic fields
+    if (body.name || body.Name) updatedFields.name = body.name || body.Name;
+    if (body.university || body.University) updatedFields.university = body.university || body.University;
+    
+    // Handle category with normalization
+    if (body.category || body.Category) {
+      const categoryValue = body.category || body.Category;
+      updatedFields.category = normalizeCategory(categoryValue);
+    }
+
+    // Handle numeric fields - support both replacement and incrementation
+    const numericFields = [
+      { reqField: 'totalRuns', altField: 'Total Runs', incField: 'add_totalRuns' },
+      { reqField: 'ballsFaced', altField: 'Balls Faced', incField: 'add_ballsFaced' },
+      { reqField: 'inningsPlayed', altField: 'Innings Played', incField: 'add_inningsPlayed' },
+      { reqField: 'wickets', altField: 'Wickets', incField: 'add_wickets' },
+      { reqField: 'oversBowled', altField: 'Overs Bowled', incField: 'add_oversBowled' },
+      { reqField: 'runsConceded', altField: 'Runs Conceded', incField: 'add_runsConceded' }
+    ];
+
+    // Check for incremental updates
+    let hasIncrementalChanges = false;
+    numericFields.forEach(field => {
+      // Check for increment fields
+      if (body[field.incField] !== undefined) {
+        hasIncrementalChanges = true;
+        const value = field.reqField === 'oversBowled' 
+          ? parseFloat(String(body[field.incField])) 
+          : parseInt(String(body[field.incField]));
+        
+        incrementFields[field.reqField] = value;
+      }
+      // Also handle direct replacements (existing functionality)
+      else if (body[field.reqField] !== undefined || body[field.altField] !== undefined) {
+        const value = body[field.reqField] !== undefined ? body[field.reqField] : body[field.altField];
+        updatedFields[field.reqField] = field.reqField === 'oversBowled' 
+          ? parseFloat(String(value)) 
+          : parseInt(String(value));
+      }
+    });
+
+    // If we have increments, apply them to get the new values
+    if (Object.keys(incrementFields).length > 0) {
+      console.log("Incrementing fields:", incrementFields);
+      for (const [field, increment] of Object.entries(incrementFields)) {
+        updatedFields[field] = player[field] + increment;
+        console.log(`Incrementing ${field} from ${player[field]} by ${increment} to ${updatedFields[field]}`);
+      }
+    }
+
+    // If performance stats changed, recalculate derived statistics
+    if (numericFields.some(field => updatedFields[field.reqField] !== undefined) || hasIncrementalChanges) {
+      const statsInput = {
+        totalRuns: updatedFields.totalRuns !== undefined ? updatedFields.totalRuns : player.totalRuns,
+        ballsFaced: updatedFields.ballsFaced !== undefined ? updatedFields.ballsFaced : player.ballsFaced,
+        inningsPlayed: updatedFields.inningsPlayed !== undefined ? updatedFields.inningsPlayed : player.inningsPlayed,
+        wickets: updatedFields.wickets !== undefined ? updatedFields.wickets : player.wickets,
+        oversBowled: updatedFields.oversBowled !== undefined ? updatedFields.oversBowled : player.oversBowled,
+        runsConceded: updatedFields.runsConceded !== undefined ? updatedFields.runsConceded : player.runsConceded,
+      };
+      
+      console.log("Recalculating stats with:", statsInput);
+      const recalculatedStats = calculatePlayerStats(statsInput);
+      
+      // Update derived fields
+      updatedFields.battingStrikeRate = recalculatedStats.battingStrikeRate;
+      updatedFields.bowlingStrikeRate = recalculatedStats.bowlingStrikeRate;
+      updatedFields.battingAverage = recalculatedStats.battingAverage;
+      updatedFields.economyRate = recalculatedStats.economyRate;
+      updatedFields.playerPoints = recalculatedStats.playerPoints;
+      updatedFields.playerValue = recalculatedStats.playerValue;
+    }
+
+    console.log("Final updatedFields:", updatedFields);
+    
+    if (Object.keys(updatedFields).length === 0) {
+      console.log("No updates to apply");
+      return NextResponse.json({
+        message: 'No changes to update'
+      }, { status: 200 });
+    }
+
+    // Update the player
+    console.log(`Updating player ${id} with:`, updatedFields);
+    const updatedPlayer = await Player.findByIdAndUpdate(
+      id,
+      { $set: updatedFields },
+      { new: true, runValidators: true }
+    );
+    
+    console.log("Player after update:", updatedPlayer);
+
+    if (!updatedPlayer) {
+      console.error("Update failed - player not found after update");
+      return NextResponse.json({ error: 'Update failed' }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      message: 'Player updated successfully',
+      player: {
+        id: updatedPlayer._id,
+        name: updatedPlayer.name,
+        university: updatedPlayer.university,
+        category: updatedPlayer.category,
+        totalRuns: updatedPlayer.totalRuns,
+        ballsFaced: updatedPlayer.ballsFaced,
+        inningsPlayed: updatedPlayer.inningsPlayed,
+        wickets: updatedPlayer.wickets,
+        oversBowled: updatedPlayer.oversBowled,
+        runsConceded: updatedPlayer.runsConceded,
+        battingStrikeRate: updatedPlayer.battingStrikeRate,
+        bowlingStrikeRate: updatedPlayer.bowlingStrikeRate,
+        battingAverage: updatedPlayer.battingAverage,
+        economyRate: updatedPlayer.economyRate,
+        playerPoints: updatedPlayer.playerPoints,
+        playerValue: updatedPlayer.playerValue
+      }
+    }, { status: 200 });
+  } catch (error) {
+    console.error('Error updating player:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json(
+      { 
+        error: 'Error updating player',
+        details: errorMessage
+      },
+      { status: 500 }
+    );
   }
 }
