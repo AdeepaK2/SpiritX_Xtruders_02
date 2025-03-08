@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
-// Define the User schema
+
+// Define the User schema with strict enforcement
 const userSchema = new mongoose.Schema({
   username: {
     type: String,
@@ -18,6 +19,11 @@ const userSchema = new mongoose.Schema({
     required: true,
     minlength: [6, 'Password should be at least 6 characters']
   },
+  budget: {
+    type: Number,
+    required: true,  // Make it required to ensure it's always added
+    default: 9000000,
+  },
   accountCreationDate: {
     type: Date,
     default: Date.now,
@@ -26,10 +32,12 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+}, { 
+  strict: true,  // Enforce schema validation
+  versionKey: '__v' // Explicit version key
 });
 
 // Create and export the User model
-// Use mongoose.models to prevent recompiling the model
-const User = mongoose.models.User || mongoose.model('User', userSchema);
+const User = mongoose.model('User', userSchema);
 
 export default User;

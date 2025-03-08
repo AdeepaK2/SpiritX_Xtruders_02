@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
       username: username.trim(),
       email: email.trim(),
       password: hashedPassword,
+      budget: 9000000, // Explicitly set the default budget
       accountCreationDate: new Date(),
       lastLoginDate: new Date()
     });
@@ -74,6 +75,7 @@ export async function POST(request: NextRequest) {
         user: {
           username: newUser.username,
           email: newUser.email,
+          budget: newUser.budget, // Include budget in response
           accountCreationDate: newUser.accountCreationDate,
           lastLoginDate: newUser.lastLoginDate
         }
@@ -130,6 +132,85 @@ export async function GET() {
     console.error('Error fetching users:', error);
     return NextResponse.json(
       { error: 'Failed to retrieve users' },
+      { status: 500 }
+    );
+  }
+}
+
+// PATCH endpoint to update user budget (add or reduce)
+export async function PATCH(request: NextRequest) {
+  try {
+    // Get user ID from query parameter: /api/user?id=123
+    const userId = request.nextUrl.searchParams.get('id');
+    
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    }
+
+    // Parse request body
+    const body = await request.json();
+    console.log('Budget transaction request:', body);
+    
+    // Validate transaction data
+    if (body.amount === undefined || isNaN(Number(body.amount))) {
+      return NextResponse.json(
+        { error: 'Valid transaction amount is required' },
+        { status: 400 }
+      );
+    }
+
+    // Convert amount to number
+    const transactionAmount = Number(body.amount);
+    const description = body.description || 'Budget adjustment';
+    
+    // Connect to database
+    await connect();
+    
+    // Find user by ID
+    const user = await User.findById(userId);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+    
+    // Calculate new budget
+    const currentBudget = user.budget || 9000000; // Fallback if budget isn't set
+    const newBudget = currentBudget + transactionAmount;
+    
+    // Prevent negative budget
+    if (newBudget < 0) {
+      return NextResponse.json(
+        { error: 'Insufficient budget for this transaction' },
+        { status: 400 }
+      );
+    }
+    
+    // Update user budget
+    user.budget = newBudget;
+    await user.save();
+    
+    return NextResponse.json({
+      message: 'Budget updated successfully',
+      transaction: {
+        amount: transactionAmount,
+        description: description,
+        timestamp: new Date()
+      },
+      user: {
+        username: user.username,
+        email: user.email,
+        budget: user.budget,
+        accountCreationDate: user.accountCreationDate,
+        lastLoginDate: user.lastLoginDate
+      }
+    });
+    
+  } catch (error: any) {
+    console.error('Error updating user budget:', error);
+    return NextResponse.json(
+      { error: 'Failed to update budget', message: error.message },
       { status: 500 }
     );
   }
