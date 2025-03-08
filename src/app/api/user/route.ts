@@ -124,15 +124,32 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET endpoint to get all users (non-sensitive data)
-export async function GET() {
+// GET endpoint to get all users or a specific user by ID
+export async function GET(request: NextRequest) {
   try {
+    // Get user ID from query parameter: /api/user?id=123
+    const userId = request.nextUrl.searchParams.get('id');
+    
     await connect();
     
-    // Find all users but exclude password field
-    const users = await User.find({}, { password: 0 });
-    
-    return NextResponse.json({ users });
+    if (userId) {
+      // Find specific user by ID but exclude password field
+      const user = await User.findById(userId, { password: 0 });
+      
+      if (!user) {
+        return NextResponse.json(
+          { error: 'User not found' },
+          { status: 404 }
+        );
+      }
+      
+      return NextResponse.json({ user });
+    } else {
+      // Find all users but exclude password field
+      const users = await User.find({}, { password: 0 });
+      
+      return NextResponse.json({ users });
+    }
   } catch (error) {
     console.error('Error fetching users:', error);
     return NextResponse.json(

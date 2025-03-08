@@ -71,14 +71,14 @@ const BudgetView = ({ onNavigate }: BudgetViewProps = {}) => {
       try {
         setLoading(true);
         
-        // Fetch user data to get budget
+        // Fetch user data to get budget - updated to use the correct response format
         const userResponse = await fetch(`/api/user?id=${userId}`);
         if (!userResponse.ok) {
           throw new Error('Failed to fetch user data');
         }
         
         const userData = await userResponse.json();
-        setUser(userData.users[0] || null);
+        setUser(userData.user || null); // Changed from userData.users[0] to userData.user
         
         // Fetch team data
         const teamResponse = await fetch(`/api/team?userId=${userId}`);
