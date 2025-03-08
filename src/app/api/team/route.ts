@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connect from '@/utils/db';
 import Team from '@/models/teamSchema';
 import Player from '@/models/playerSchema';
+import User from '@/models/userSchema'; // Import the User model
 import mongoose from 'mongoose';
 
 // POST: Create a new team
@@ -17,7 +18,27 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    // Validate player IDs if provided
+    // Find the user to check budget
+    const user = await User.findById(body.userId);
+    if (!user) {
+      return NextResponse.json({ 
+        error: 'User not found' 
+      }, { status: 404 });
+    }
+    
+    // Check if user already has a team
+    const existingTeam = await Team.findOne({ userId: body.userId });
+    if (existingTeam) {
+      // If updating existing team, calculate difference for budget adjustment
+      // For now, we'll just delete the old team and create a new one
+      await Team.findByIdAndDelete(existingTeam._id);
+      // We'll refund the previous team value to the user
+      user.budget += existingTeam.totalValue || 0;
+    }
+    
+    // Calculate total team value if players provided
+    let totalTeamValue = 0;
+    
     if (body.players && Array.isArray(body.players)) {
       // Check that all player IDs are valid ObjectIds
       const invalidIds = body.players.filter(
@@ -31,11 +52,9 @@ export async function POST(request: NextRequest) {
       }
       
       // Check if all players exist in database
-      const playerCount = await Player.countDocuments({
-        _id: { $in: body.players }
-      });
+      const players = await Player.find({ _id: { $in: body.players } });
       
-      if (playerCount !== body.players.length) {
+      if (players.length !== body.players.length) {
         return NextResponse.json({ 
           error: 'One or more players do not exist' 
         }, { status: 400 });
@@ -49,11 +68,25 @@ export async function POST(request: NextRequest) {
       }
       
       // Calculate total team value
-      const players = await Player.find({ _id: { $in: body.players } });
-      body.totalValue = players.reduce(
+      totalTeamValue = players.reduce(
         (sum: number, player: any) => sum + (player.playerValue || 0), 
         0
       );
+      
+      body.totalValue = totalTeamValue;
+      
+      // Check if user has enough budget
+      if (totalTeamValue > user.budget) {
+        return NextResponse.json({ 
+          error: 'Insufficient budget to create this team',
+          required: totalTeamValue,
+          available: user.budget
+        }, { status: 400 });
+      }
+      
+      // Deduct the team cost from user's budget
+      user.budget -= totalTeamValue;
+      await user.save();
     }
     
     // Create new team
@@ -62,7 +95,8 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({
       message: 'Team created successfully',
-      team: newTeam
+      team: newTeam,
+      budgetRemaining: user.budget
     }, { status: 201 });
   } catch (error) {
     console.error('Error creating team:', error);
@@ -97,6 +131,14 @@ export async function PATCH(request: NextRequest) {
       }, { status: 404 });
     }
     
+    // Find the user to update budget
+    const user = await User.findById(team.userId);
+    if (!user) {
+      return NextResponse.json({ 
+        error: 'Team owner not found' 
+      }, { status: 404 });
+    }
+    
     // Update basic team info
     if (body.name) team.name = body.name;
     
@@ -113,12 +155,10 @@ export async function PATCH(request: NextRequest) {
         }, { status: 400 });
       }
       
-      // Check if all players exist
-      const playerCount = await Player.countDocuments({
-        _id: { $in: body.players }
-      });
+      // Check if all players exist and calculate new team value
+      const players = await Player.find({ _id: { $in: body.players } });
       
-      if (playerCount !== body.players.length) {
+      if (players.length !== body.players.length) {
         return NextResponse.json({ 
           error: 'One or more players do not exist' 
         }, { status: 400 });
@@ -131,22 +171,39 @@ export async function PATCH(request: NextRequest) {
         }, { status: 400 });
       }
       
-      // Update players array
-      team.players = body.players;
-      
-      // Recalculate total team value
-      const players = await Player.find({ _id: { $in: body.players } });
-      team.totalValue = players.reduce(
+      // Calculate new team value
+      const newTotalValue = players.reduce(
         (sum: number, player: any) => sum + (player.playerValue || 0), 
         0
       );
+      
+      // Calculate difference in budget
+      const budgetDifference = team.totalValue - newTotalValue;
+      
+      // Check if user has enough budget for the new team value
+      if (budgetDifference < 0 && Math.abs(budgetDifference) > user.budget) {
+        return NextResponse.json({ 
+          error: 'Insufficient budget to make these changes',
+          required: Math.abs(budgetDifference),
+          available: user.budget
+        }, { status: 400 });
+      }
+      
+      // Update user's budget based on the difference
+      user.budget += budgetDifference;
+      await user.save();
+      
+      // Update team players and value
+      team.players = body.players;
+      team.totalValue = newTotalValue;
     }
     
     await team.save();
     
     return NextResponse.json({
       message: 'Team updated successfully',
-      team
+      team,
+      budgetRemaining: user.budget
     }, { status: 200 });
   } catch (error) {
     console.error('Error updating team:', error);
@@ -225,7 +282,7 @@ export async function DELETE(request: NextRequest) {
       }, { status: 400 });
     }
     
-    const deletedTeam = await Team.findByIdAndDelete(id);
+    const deletedTeam = await Team.findById(id);
     
     if (!deletedTeam) {
       return NextResponse.json({ 
@@ -233,9 +290,21 @@ export async function DELETE(request: NextRequest) {
       }, { status: 404 });
     }
     
+    // Refund team value to user's budget
+    const user = await User.findById(deletedTeam.userId);
+    if (user) {
+      user.budget += deletedTeam.totalValue || 0;
+      await user.save();
+    }
+    
+    // Now delete the team
+    await Team.findByIdAndDelete(id);
+    
     return NextResponse.json({
       message: 'Team deleted successfully',
-      id: deletedTeam._id
+      id: deletedTeam._id,
+      refundedAmount: deletedTeam.totalValue || 0,
+      newBudget: user ? user.budget : null
     }, { status: 200 });
   } catch (error) {
     console.error('Error deleting team:', error);

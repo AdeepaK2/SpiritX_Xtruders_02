@@ -17,12 +17,14 @@ interface Player {
   university: string
 }
 
+// Modify the SpiriterProps interface to include the optional isExpanded prop
 interface SpiriterProps {
   selectedPlayers: Player[]
   budget: number
+  isExpanded?: boolean // Add this optional prop
 }
 
-export default function Spiriter({ selectedPlayers, budget }: SpiriterProps) {
+export default function Spiriter({ selectedPlayers, budget, isExpanded }: SpiriterProps) {
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: 'Hi! I\'m Spiriter, your cricket team assistant. How can I help you build your dream team?' }
   ])
@@ -30,7 +32,8 @@ export default function Spiriter({ selectedPlayers, budget }: SpiriterProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [availablePlayers, setAvailablePlayers] = useState<Player[]>([])
   const chatContainerRef = useRef<HTMLDivElement>(null)
-  const [isMinimized, setIsMinimized] = useState(true) // Start minimized
+  // Use the prop to initialize the state if provided
+  const [isMinimized, setIsMinimized] = useState(isExpanded ? false : true)
 
   // Fetch all available players when component mounts
   useEffect(() => {
@@ -55,6 +58,13 @@ export default function Spiriter({ selectedPlayers, budget }: SpiriterProps) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
     }
   }, [messages])
+
+  // Update minimized state when isExpanded prop changes
+  useEffect(() => {
+    if (isExpanded !== undefined) {
+      setIsMinimized(!isExpanded)
+    }
+  }, [isExpanded])
 
   const toggleMinimized = () => {
     setIsMinimized(!isMinimized)
