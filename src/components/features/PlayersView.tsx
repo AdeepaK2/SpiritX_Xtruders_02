@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { FaSort, FaSortUp, FaSortDown, FaSearch } from 'react-icons/fa';
+import { FaSort, FaSortUp, FaSortDown, FaSearch, FaTimes } from 'react-icons/fa';
+import PlayerStatsView from '@/components/features/PlayerStatsView';
 
 // Define player type based on your API response
 interface Player {
@@ -35,6 +36,7 @@ const PlayersPage = () => {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
 
   useEffect(() => {
     const fetchPlayers = async () => {
@@ -115,6 +117,16 @@ const PlayersPage = () => {
   // Format decimal numbers to display with 2 decimal places
   const formatDecimal = (num: number) => {
     return num.toFixed(2);
+  };
+
+  // Handle player selection
+  const handlePlayerClick = (player: Player) => {
+    setSelectedPlayer(player);
+  };
+  
+  // Close player stats modal
+  const closePlayerStats = () => {
+    setSelectedPlayer(null);
   };
 
   if (loading) {
@@ -250,7 +262,11 @@ const PlayersPage = () => {
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredAndSortedPlayers.length > 0 ? (
               filteredAndSortedPlayers.map((player) => (
-                <tr key={player._id} className="hover:bg-gray-50">
+                <tr 
+                  key={player._id} 
+                  className="hover:bg-gray-50 cursor-pointer transition-colors"
+                  onClick={() => handlePlayerClick(player)}
+                >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="font-medium text-gray-900">{player.name}</div>
                   </td>
@@ -297,6 +313,11 @@ const PlayersPage = () => {
       <div className="mt-4 text-sm text-gray-600">
         Total: {filteredAndSortedPlayers.length} players
       </div>
+
+      {/* Player Stats Modal */}
+      {selectedPlayer && (
+        <PlayerStatsView player={selectedPlayer} onClose={closePlayerStats} />
+      )}
     </div>
   );
 };
