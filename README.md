@@ -6,9 +6,14 @@ Welcome to the SpiritX Cricket Fantasy League, a full-featured fantasy cricket p
 
 **Live deployment**: [https://spirit-x-xtruders-02.vercel.app/](https://spirit-x-xtruders-02.vercel.app/)
 
-**Test credentials**:
+**Test user credentials**:
 - **Email**: testuser@gmail.com
 - **Password**: testpassword123
+
+**Admin portal access**:
+- **URL**: [https://spirit-x-xtruders-02.vercel.app/admin/login](https://spirit-x-xtruders-02.vercel.app/admin/login)
+- **Username**: adminuser
+- **Password**: securePassword123
 
 You can also create your own account through the signup page.
 
