@@ -1,12 +1,19 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
+
+  // Animation trigger on mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,16 +54,28 @@ export default function Login() {
     }
   };
 
-  // For testing - create a test login function
-  const handleTestLogin = () => {
-    // Hardcoded test user ID - replace with a valid user ID from your database
-    const testUserId = "65d9b18a02cb3e578f016f14"; // Example user ID
-    router.push(`/${testUserId}/dashboard`);
-  };
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-blue-300">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-800 to-indigo-900">
+      {/* Background animated elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-10 -right-10 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply opacity-20 filter blur-3xl animate-blob"></div>
+        <div className="absolute top-0 -left-4 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply opacity-20 filter blur-3xl animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-8 left-20 w-80 h-80 bg-purple-600 rounded-full mix-blend-multiply opacity-20 filter blur-3xl animate-blob animation-delay-4000"></div>
+      </div>
+      
+      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md relative z-10">
+        {/* Logo */}
+        <div className="flex justify-center mb-6">
+          <Image
+            src="/logo.png"
+            alt="SpiritX Logo"
+            width={180}
+            height={75}
+            priority
+            className="drop-shadow-xl"
+          />
+        </div>
+        
         <h2 className="text-2xl text-black font-bold mb-6 text-center">Login</h2>
         
         {error && (
@@ -99,20 +118,6 @@ export default function Login() {
           </button>
         </form>
         
-        {/* Dev tools section - remove in production */}
-        <div className="mt-6 p-4 border border-gray-200 rounded-md">
-          <h3 className="font-medium text-gray-700 mb-2">Dev Testing</h3>
-          <button 
-            onClick={handleTestLogin}
-            className="w-full bg-gray-800 text-white py-2 rounded-md hover:bg-gray-700"
-          >
-            Test Dashboard Redirect
-          </button>
-          <p className="mt-2 text-xs text-gray-500">
-            This button bypasses login and redirects directly to a test user dashboard
-          </p>
-        </div>
-        
         <p className="mt-6 text-center text-sm text-gray-600">
           Don't have an account?{" "}
           <a href="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
@@ -120,6 +125,25 @@ export default function Login() {
           </a>
         </p>
       </div>
+      
+      {/* Add animation keyframes to the styles */}
+      <style jsx global>{`
+        @keyframes blob {
+          0% { transform: translate(0px, 0px) scale(1); }
+          33% { transform: translate(30px, -50px) scale(1.1); }
+          66% { transform: translate(-20px, 20px) scale(0.9); }
+          100% { transform: translate(0px, 0px) scale(1); }
+        }
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+      `}</style>
     </div>
   );
 }
