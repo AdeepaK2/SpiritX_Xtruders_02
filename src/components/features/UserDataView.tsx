@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { FaUser, FaCoins, FaTrophy, FaUserFriends } from 'react-icons/fa';
+import { FaUser, FaCoins, FaTrophy, FaUserFriends, FaCalendarAlt } from 'react-icons/fa';
 
 interface User {
   _id: string;
@@ -11,18 +11,20 @@ interface User {
   budget: number;
   points: number;
   rank?: number;
-  createdAt: string;
+  accountCreationDate: string;
+  lastLoginDate: string;
 }
 
 interface Team {
   _id: string;
   name: string;
-  players: string[];
+  players: any[];
+  totalValue: number;
 }
 
 const UserDataView = () => {
   const params = useParams();
-  const userId = params.userId as string;
+  const userId = Array.isArray(params.userId) ? params.userId[0] : params.userId ?? '';
   
   const [user, setUser] = useState<User | null>(null);
   const [team, setTeam] = useState<Team | null>(null);
@@ -33,31 +35,47 @@ const UserDataView = () => {
     const fetchUserData = async () => {
       try {
         setLoading(true);
+        setError('');
+        
         // Fetch user data
         const userRes = await fetch(`/api/user?id=${userId}`);
+        
+        if (!userRes.ok) {
+          throw new Error(`Failed to fetch user data: ${userRes.status}`);
+        }
+        
         const userData = await userRes.json();
+        
+        if (userData.user) {
+          setUser(userData.user);
+        } else {
+          throw new Error('User data not found in response');
+        }
         
         // Fetch team data
         const teamRes = await fetch(`/api/team?userId=${userId}`);
-        const teamData = await teamRes.json();
         
-        if (userData.users && userData.users.length > 0) {
-          setUser(userData.users[0]);
+        if (teamRes.ok) {
+          const teamData = await teamRes.json();
+          if (teamData.teams && teamData.teams.length > 0) {
+            setTeam(teamData.teams[0]);
+          }
         }
         
-        if (teamData.teams && teamData.teams.length > 0) {
-          setTeam(teamData.teams[0]);
-        }
-        
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error fetching user data:', err);
-        setError('Failed to load user data');
+        setError(err.message || 'Failed to load user data');
       } finally {
         setLoading(false);
       }
     };
     
-    fetchUserData();
+    if (userId) {
+      fetchUserData();
+    } else {
+      setError('No user ID provided');
+      setLoading(false);
+    }
   }, [userId]);
 
   if (loading) {
@@ -81,7 +99,7 @@ const UserDataView = () => {
     return (
       <div className="w-full p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
         <h3 className="text-lg font-medium text-yellow-800">User not found</h3>
-        <p className="text-yellow-700">Could not find user data</p>
+        <p className="text-yellow-700">Could not find user data for this account</p>
       </div>
     );
   }
@@ -110,7 +128,7 @@ const UserDataView = () => {
                 <FaCoins className="text-yellow-500 text-xl mr-3" />
                 <div>
                   <p className="text-sm text-gray-500">Budget</p>
-                  <p className="font-semibold">₹{user.budget.toLocaleString()}</p>
+                  <p className="font-semibold">₹{user.budget?.toLocaleString() || '0'}</p>
                 </div>
               </div>
               
@@ -131,9 +149,12 @@ const UserDataView = () => {
               </div>
               
               <div className="bg-gray-50 p-4 rounded-lg">
-                <p className="text-sm text-gray-500">Member Since</p>
+                <div className="flex items-center mb-3">
+                  <FaCalendarAlt className="text-blue-500 text-xl mr-3" />
+                  <p className="text-sm text-gray-500">Member Since</p>
+                </div>
                 <p className="font-semibold">
-                  {new Date(user.createdAt).toLocaleDateString('en-US', {
+                  {new Date(user.accountCreationDate).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric'
@@ -158,25 +179,67 @@ const UserDataView = () => {
             </div>
             
             {team ? (
-              <div>
-                <p>Team information will be displayed here</p>
-                {/* Add team details here when your API supports it */}
+              <div className="space-y-4">
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className="flex justify-between mb-2">
+                    <span className="text-gray-700 font-medium">Team Value:</span>
+                    <span className="font-semibold">₹{team.totalValue?.toLocaleString() || '0'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-700 font-medium">Players:</span>
+                    <span className="font-semibold">{team.players.length}/11</span>
+                  </div>
+                </div>
+                
+                {team.players.length > 0 ? (
+                  <div className="mt-4">
+                    <h4 className="text-lg font-medium mb-3">Team Players</h4>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full bg-white divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {team.players.map((player: any) => (
+                            <tr key={player._id}>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{player.name}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{player.category}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₹{player.playerValue?.toLocaleString() || '0'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm italic text-gray-600">Your team has been created but no players have been added yet.</p>
+                )}
               </div>
             ) : (
               <div className="bg-blue-50 p-4 rounded-lg">
                 <p className="text-blue-700">
-                  You haven't created a team yet. Go to the "Select Your Team" page to build your team.
+                  You haven't created a team yet. Go to the "Select Team" page to build your team.
                 </p>
               </div>
             )}
           </div>
           
-          {/* Recent Activity or Stats */}
+          {/* Game Statistics */}
           <div className="bg-white rounded-lg shadow p-6 mt-6">
             <h3 className="text-xl font-bold mb-4">Game Statistics</h3>
             <div className="space-y-4">
+              <div className="p-4 bg-gray-50 rounded-lg flex justify-between">
+                <span className="text-gray-700 font-medium">Last Login:</span>
+                <span className="font-semibold">
+                  {user.lastLoginDate ? new Date(user.lastLoginDate).toLocaleString() : 'N/A'}
+                </span>
+              </div>
               <p className="text-gray-600">
-                Your game statistics and performance metrics will appear here as you play.
+                Additional game statistics and performance metrics will appear here as you play.
               </p>
             </div>
           </div>

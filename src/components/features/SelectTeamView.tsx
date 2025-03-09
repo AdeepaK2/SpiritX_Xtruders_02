@@ -130,7 +130,7 @@ const PlayerCard = ({ player, isSelected, onToggleSelect, disabled }: {
               Batting Avg
             </span>
             <span className="font-medium">
-              {player.battingAverage || 'N/A'}
+              {player.battingAverage || 'Not Defined'}
             </span>
           </div>
           <div className={`p-2 rounded ${player.bowlingStrikeRate ? 'bg-red-50' : 'bg-gray-50'}`}>
@@ -138,7 +138,7 @@ const PlayerCard = ({ player, isSelected, onToggleSelect, disabled }: {
               Strike Rate
             </span>
             <span className="font-medium">
-              {player.bowlingStrikeRate || 'N/A'}
+              {player.bowlingStrikeRate || 'Not Defined'}
             </span>
           </div>
         </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { FaUsers, FaClipboardList, FaRobot, FaChartBar, FaUserFriends } from 'react-icons/fa';
 
 // Import your feature components
@@ -36,13 +36,52 @@ interface Team {
 
 const Dashboard = () => {
   const params = useParams();
+  const router = useRouter();
   const userId = Array.isArray(params.userId) ? params.userId[0] : params.userId ?? '';
-  const [activeFeature, setActiveFeature] = useState(''); // Empty string for dashboard overview
+  const [activeFeature, setActiveFeature] = useState('');
   const [team, setTeam] = useState<Team | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isUserValidated, setIsUserValidated] = useState(false);
   
-  // Fetch team data
+  // Check if user exists before rendering dashboard
   useEffect(() => {
+    const validateUser = async () => {
+      try {
+        if (!userId) {
+          router.push('/');
+          return;
+        }
+
+        const response = await fetch(`/api/user?id=${userId}`);
+        
+        if (!response.ok) {
+          console.error("User not found or error occurred");
+          router.push('/');
+          return;
+        }
+
+        const data = await response.json();
+        if (!data.user) {
+          console.error("User data not found");
+          router.push('/');
+          return;
+        }
+        
+        // User exists and is valid
+        setIsUserValidated(true);
+      } catch (error) {
+        console.error("Error validating user:", error);
+        router.push('/');
+      }
+    };
+
+    validateUser();
+  }, [userId, router]);
+  
+  // Fetch team data only if user is validated
+  useEffect(() => {
+    if (!isUserValidated) return;
+    
     const fetchTeamData = async () => {
       try {
         setLoading(true);
@@ -62,11 +101,21 @@ const Dashboard = () => {
       }
     };
     
-    if (userId) {
-      fetchTeamData();
-    }
-  }, [userId, activeFeature]); // Re-fetch when active feature changes to update status
+    fetchTeamData();
+  }, [userId, activeFeature, isUserValidated]);
 
+  // Don't render anything while validating user
+  if (!isUserValidated) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Verifying user...</p>
+        </div>
+      </div>
+    );
+  }
+  
   // Team completeness calculation
   const playerCount = team?.players?.length || 0;
   const maxPlayers = 11;
