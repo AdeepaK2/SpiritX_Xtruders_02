@@ -18,6 +18,9 @@ interface Player {
   battingAvg?: number;
 }
 
+type SortField = 'name' | 'university' | 'category' | 'playerValue' | 'playerPoints' | 'battingAvg';
+type SortDirection = 'asc' | 'desc';
+
 const PlayerStats = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +28,8 @@ const PlayerStats = () => {
   const [search, setSearch] = useState("");
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("All Categories");
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   useEffect(() => {
     const fetchPlayers = async () => {
@@ -52,11 +57,58 @@ const PlayerStats = () => {
     fetchPlayers();
   }, []);
 
-  const filteredPlayers = players.filter((player) => {
-    const nameMatch = player.name.toLowerCase().includes(search.toLowerCase());
-    const categoryMatch = selectedCategory === "All Categories" || player.category === selectedCategory;
-    return nameMatch && categoryMatch;
-  });
+  const sortPlayers = (a: Player, b: Player) => {
+    let comparison = 0;
+    
+    switch(sortField) {
+      case 'name':
+        comparison = a.name.localeCompare(b.name);
+        break;
+      case 'university':
+        comparison = a.university.localeCompare(b.university);
+        break;
+      case 'category':
+        comparison = a.category.localeCompare(b.category);
+        break;
+      case 'playerValue':
+        comparison = a.playerValue - b.playerValue;
+        break;
+      case 'playerPoints':
+        comparison = a.playerPoints - b.playerPoints;
+        break;
+      case 'battingAvg':
+        comparison = (a.battingAvg || 0) - (b.battingAvg || 0);
+        break;
+      default:
+        comparison = 0;
+    }
+    
+    return sortDirection === 'asc' ? comparison : -comparison;
+  };
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      // Toggle direction if same field
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new field and default to ascending
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+  
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) return '↕';
+    return sortDirection === 'asc' ? '↑' : '↓';
+  };
+
+  const filteredPlayers = players
+    .filter((player) => {
+      const nameMatch = player.name.toLowerCase().includes(search.toLowerCase());
+      const categoryMatch = selectedCategory === "All Categories" || player.category === selectedCategory;
+      return nameMatch && categoryMatch;
+    })
+    .sort(sortPlayers);
 
   const togglePlayerSelection = (playerId: string) => {
     if (selectedPlayers.includes(playerId)) {
@@ -95,7 +147,7 @@ const PlayerStats = () => {
         </div>
         
         <div className="p-6 flex-1 overflow-auto">
-          <h1 className="text-3xl font-bold text-gray-800 mb-1">Players</h1>
+          <h1 className="text-3xl font-bold text-gray-800 mb-1">Player Stats</h1>
           <p className="text-gray-600 mb-2">View and analyze all players statistics</p>
           <p className="text-purple-600 mb-4">ℹ️ Click each player to view their full stats</p>
           
@@ -132,23 +184,47 @@ const PlayerStats = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead>
                   <tr className="bg-gray-50">
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Player
+                    <th 
+                      scope="col" 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      onClick={() => handleSort('name')}
+                    >
+                      Player {getSortIcon('name')}
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      University
+                    <th 
+                      scope="col" 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      onClick={() => handleSort('university')}
+                    >
+                      University {getSortIcon('university')}
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Category
+                    <th 
+                      scope="col" 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      onClick={() => handleSort('category')}
+                    >
+                      Category {getSortIcon('category')}
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Value
+                    <th 
+                      scope="col" 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      onClick={() => handleSort('playerValue')}
+                    >
+                      Value {getSortIcon('playerValue')}
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Points
+                    <th 
+                      scope="col" 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      onClick={() => handleSort('playerPoints')}
+                    >
+                      Points {getSortIcon('playerPoints')}
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Batting Avg
+                    <th 
+                      scope="col" 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      onClick={() => handleSort('battingAvg')}
+                    >
+                      Batting Avg {getSortIcon('battingAvg')}
                     </th>
                   </tr>
                 </thead>
