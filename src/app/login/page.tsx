@@ -8,22 +8,27 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-  
-    const data = await res.json();
-  
-    if (data.token && data.userId) {
-      localStorage.setItem("token", data.token); // Store token
-      router.push(`/${data.userId}/dashboard`); // Redirect to user-specific dashboard
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+    
+      const data = await res.json();
+    
+      if (data.success) {
+        // No need to manually store token as the API will set the cookie
+        router.push(`/${data.userId}/dashboard`);
+      } else {
+        // Show error message
+        alert(data.message || data.error || "Login failed");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("An error occurred during login");
     }
-  
-    alert(data.message || data.error);
   };
-  
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-blue-300">
