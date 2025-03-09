@@ -1,163 +1,185 @@
-import { NextRequest, NextResponse } from 'next/server';
-import connect from '@/utils/db';
-import Admin from '@/models/adminSchema';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import { NextRequest, NextResponse } from "next/server";
+import connect  from "@/utils/db";
+import bcrypt from "bcrypt";
 
-// Ensure we have a JWT secret
-const JWT_SECRET = process.env.JWT_SECRET || 'your-fallback-secret-key';
 
-// POST - Login admin
+// Assuming you have an Admin model/schema
+// If not, you'll need to create one in your project
+
+// Admin schema example (create this in a separate file if it doesn't exist)
+import mongoose from "mongoose";
+
+// Check if Admin model already exists to prevent overwriting
+const Admin = mongoose.models.Admin || mongoose.model(
+  "Admin",
+  new mongoose.Schema(
+    {
+      username: {
+        type: String,
+        required: true,
+        unique: true,
+      },
+      email: {
+        type: String,
+        required: true,
+        unique: true,
+      },
+      password: {
+        type: String,
+        required: true,
+      },
+      role: {
+        type: String,
+        default: "admin",
+      },
+      createdAt: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+    { timestamps: true }
+  )
+);
+
+// POST: Create new admin
 export async function POST(request: NextRequest) {
   try {
+    const body = await request.json();
+    const { username, email, password } = body;
+
+    // Validate required fields
+    if (!username || !email || !password) {
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
+    // Connect to database
     await connect();
-    const { username, password } = await request.json();
 
-    // Validate input
-    if (!username || !password) {
-      return NextResponse.json({ error: 'Username and password are required' }, { status: 400 });
+    // Check if admin already exists
+    const existingAdmin = await Admin.findOne({
+      $or: [{ email }, { username }],
+    });
+
+    if (existingAdmin) {
+      return NextResponse.json(
+        { error: "Admin with this email or username already exists" },
+        { status: 409 }
+      );
     }
 
-    // Find the admin user
-    const admin = await Admin.findOne({ username });
-    if (!admin) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
-    }
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Verify password
-    const isMatch = await bcrypt.compare(password, admin.password);
-    if (!isMatch) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
-    }
+    // Create new admin
+    const newAdmin = await Admin.create({
+      username,
+      email,
+      password: hashedPassword,
+    });
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { id: admin._id, username: admin.username },
-      JWT_SECRET,
-      { expiresIn: '1d' }
+    // Return created admin without password
+    const adminWithoutPassword = {
+      _id: newAdmin._id,
+      username: newAdmin.username,
+      email: newAdmin.email,
+      role: newAdmin.role,
+      createdAt: newAdmin.createdAt,
+    };
+
+    return NextResponse.json(
+      { message: "Admin created successfully", admin: adminWithoutPassword },
+      { status: 201 }
     );
-
-    // Return successful response with token
-    return NextResponse.json({ 
-      message: 'Login successful', 
-      token,
-      admin: {
-        id: admin._id,
-        username: admin.username
-      }
-    }, { status: 200 });
-    
   } catch (error) {
-    console.error('Error during login:', error);
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    console.error("Error creating admin:", error);
+    return NextResponse.json(
+      { error: "Failed to create admin" },
+      { status: 500 }
+    );
   }
 }
 
-// GET - Get admin by ID
+// GET: Retrieve admin(s) or verify login credentials
 export async function GET(request: NextRequest) {
   try {
+    // Connect to database
     await connect();
-    const id = request.nextUrl.searchParams.get('id');
 
-    if (!id) {
-      return NextResponse.json({ error: 'Admin ID is required' }, { status: 400 });
-    }
+    const { searchParams } = new URL(request.url);
+    const email = searchParams.get("email");
+    const username = searchParams.get("username");
+    const password = searchParams.get("password");
+    const verifyLogin = searchParams.get("verifyLogin");
 
-    const admin = await Admin.findById(id).select('-password');
-    if (!admin) {
-      return NextResponse.json({ error: 'Admin not found' }, { status: 404 });
-    }
+    // Handle login verification
+    if (verifyLogin === "true" && (username || email) && password) {
+      const query: any = {};
+      if (email) query.email = email;
+      if (username) query.username = username;
 
-    return NextResponse.json({ admin }, { status: 200 });
-  } catch (error) {
-    console.error('Error fetching admin:', error);
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  }
-}
+      // Find admin - include password for verification
+      const admin = await Admin.findOne(query);
 
-// PUT - Update admin
-export async function PUT(request: NextRequest) {
-  try {
-    await connect();
-    const id = request.nextUrl.searchParams.get('id');
-    
-    if (!id) {
-      return NextResponse.json({ error: 'Admin ID is required' }, { status: 400 });
-    }
-    
-    const { username, currentPassword, newPassword } = await request.json();
-    
-    // Find admin
-    const admin = await Admin.findById(id);
-    if (!admin) {
-      return NextResponse.json({ error: 'Admin not found' }, { status: 404 });
-    }
-    
-    // Prepare update object
-    const updateData: { username?: string, password?: string } = {};
-    
-    // Update username if provided
-    if (username && username !== admin.username) {
-      // Check if username already exists
-      const existingAdmin = await Admin.findOne({ username });
-      if (existingAdmin && existingAdmin._id.toString() !== id) {
-        return NextResponse.json({ error: 'Username already taken' }, { status: 400 });
+      // Check if admin exists
+      if (!admin) {
+        return NextResponse.json(
+          { error: "Invalid credentials" },
+          { status: 401 }
+        );
       }
-      updateData.username = username;
-    }
-    
-    // Update password if provided
-    if (currentPassword && newPassword) {
-      // Verify current password
-      const isMatch = await bcrypt.compare(currentPassword, admin.password);
-      if (!isMatch) {
-        return NextResponse.json({ error: 'Current password is incorrect' }, { status: 401 });
+
+      // Compare password
+      const passwordMatch = await bcrypt.compare(password, admin.password);
+      if (!passwordMatch) {
+        return NextResponse.json(
+          { error: "Invalid credentials" },
+          { status: 401 }
+        );
       }
-      
-      // Hash new password
-      updateData.password = await bcrypt.hash(newPassword, 10);
+
+      // Return admin without password
+      const adminWithoutPassword = {
+        _id: admin._id,
+        username: admin.username,
+        email: admin.email,
+        role: admin.role,
+        createdAt: admin.createdAt,
+      };
+
+      return NextResponse.json(
+        { message: "Login successful", admin: adminWithoutPassword },
+        { status: 200 }
+      );
     }
-    
-    // Update admin
-    if (Object.keys(updateData).length === 0) {
-      return NextResponse.json({ error: 'No valid update data provided' }, { status: 400 });
+
+    // If email or username provided (without verify login), find specific admin
+    if (email || username) {
+      const query: any = {};
+      if (email) query.email = email;
+      if (username) query.username = username;
+
+      const admin = await Admin.findOne(query).select("-password");
+
+      if (!admin) {
+        return NextResponse.json({ error: "Admin not found" }, { status: 404 });
+      }
+
+      return NextResponse.json({ admin }, { status: 200 });
     }
+
+    // Otherwise, return all admins (usually protected by authorization)
+    // In a real app, you would limit this to authorized super admins
+    const admins = await Admin.find({}).select("-password");
     
-    const updatedAdmin = await Admin.findByIdAndUpdate(
-      id, 
-      updateData,
-      { new: true, runValidators: true }
-    ).select('-password');
-    
-    return NextResponse.json({ 
-      message: 'Admin updated successfully',
-      admin: updatedAdmin
-    }, { status: 200 });
-    
+    return NextResponse.json({ admins }, { status: 200 });
   } catch (error) {
-    console.error('Error updating admin:', error);
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  }
-}
-
-// DELETE - Delete admin
-export async function DELETE(request: NextRequest) {
-  try {
-    await connect();
-    const id = request.nextUrl.searchParams.get('id');
-
-    if (!id) {
-      return NextResponse.json({ error: 'Admin ID is required' }, { status: 400 });
-    }
-
-    const deletedAdmin = await Admin.findByIdAndDelete(id);
-    if (!deletedAdmin) {
-      return NextResponse.json({ error: 'Admin not found' }, { status: 404 });
-    }
-
-    return NextResponse.json({ message: 'Admin deleted successfully' }, { status: 200 });
-  } catch (error) {
-    console.error('Error deleting admin:', error);
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    console.error("Error retrieving admin(s):", error);
+    return NextResponse.json(
+      { error: "Failed to retrieve admin(s)" },
+      { status: 500 }
+    );
   }
 }

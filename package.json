@@ -10,8 +10,10 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
+    "@types/bcrypt": "^5.0.2",
     "@types/uuid": "^10.0.0",
     "axios": "^1.8.2",
+    "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.2",
     "cookies-next": "^5.1.0",
     "csv-parser": "^3.2.0",
