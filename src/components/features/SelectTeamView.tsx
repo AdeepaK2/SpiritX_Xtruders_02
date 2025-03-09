@@ -58,12 +58,12 @@ const EnhancedBudgetDisplay = ({ total, used }: { total: number, used: number })
           <div className="grid grid-cols-2 gap-6">
             <div>
               <p className="text-xs uppercase tracking-wide opacity-80">Total Budget</p>
-              <p className="text-2xl font-bold">₹{total.toLocaleString()}</p>
+              <p className="text-2xl font-bold">Rs.{total.toLocaleString()}</p>
             </div>
             <div>
               <p className="text-xs uppercase tracking-wide opacity-80">Remaining</p>
               <p className={`text-2xl font-bold ${remaining < total * 0.1 ? 'text-red-300' : ''}`}>
-                ₹{remaining.toLocaleString()}
+                Rs.{remaining.toLocaleString()}
               </p>
             </div>
           </div>
@@ -120,7 +120,7 @@ const PlayerCard = ({ player, isSelected, onToggleSelect, disabled }: {
 
         <div className="mt-3 bg-gray-50 p-2 rounded-md">
           <div className="text-sm text-gray-600">Value:</div>
-          <div className="text-xl font-bold text-gray-800">₹{player.playerValue.toLocaleString()}</div>
+          <div className="text-xl font-bold text-gray-800">Rs.{player.playerValue.toLocaleString()}</div>
         </div>
 
         {/* Player stats - more consistent layout */}
@@ -392,7 +392,7 @@ export default function SelectTeamPage() {
             <div className="flex items-center">
               <FaMoneyBillWave className="text-blue-500 mr-2" />
               <span className="font-medium">Your Budget: </span>
-              <span className="ml-1 font-bold text-blue-700">₹{user.budget.toLocaleString()}</span>
+              <span className="ml-1 font-bold text-blue-700">Rs.{user.budget.toLocaleString()}</span>
             </div>
           </div>
         )}
@@ -483,7 +483,7 @@ export default function SelectTeamPage() {
                             }`}></span>
                             <p className="font-medium">{player.name}</p>
                           </div>
-                          <p className="text-sm text-gray-600 mt-0.5">₹{player.playerValue.toLocaleString()}</p>
+                          <p className="text-sm text-gray-600 mt-0.5">Rs.{player.playerValue.toLocaleString()}</p>
                         </div>
                         <button
                           type="button"
@@ -498,11 +498,11 @@ export default function SelectTeamPage() {
                     <div className="border-t pt-3 mt-3">
                       <div className="flex justify-between font-semibold">
                         <span>Total Value:</span>
-                        <span>₹{usedBudget.toLocaleString()}</span>
+                        <span>Rs.{usedBudget.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between text-sm text-gray-600 mt-1">
                         <span>Remaining Budget:</span>
-                        <span>₹{user ? (user.budget - usedBudget).toLocaleString() : 0}</span>
+                        <span>Rs.{user ? (user.budget - usedBudget).toLocaleString() : 0}</span>
                       </div>
                     </div>
                   </div>
