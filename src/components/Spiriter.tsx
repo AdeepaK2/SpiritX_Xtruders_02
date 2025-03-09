@@ -133,26 +133,26 @@ export default function Spiriter({ selectedPlayers, budget, isExpanded }: Spirit
         // Minimized chat icon/button
         <button 
           onClick={toggleMinimized}
-          className="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-105"
+          className="bg-purple-600 hover:bg-purple-700 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-105"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
           </svg>
-          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">S</span>
+          <span className="absolute -top-2 -right-2 bg-purple-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">S</span>
         </button>
       ) : (
         // Expanded chat window
         <div className="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col w-80 sm:w-96 h-[500px] transition-all duration-300 animate-slideUp">
-          <div className="bg-blue-600 text-white p-3 flex items-center justify-between">
+          <div className="bg-purple-600 text-white p-3 flex items-center justify-between">
             <div className="flex items-center">
               <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center mr-2">
-                <span className="text-blue-600 font-bold text-lg">S</span>
+                <span className="text-purple-600 font-bold text-lg">S</span>
               </div>
               <h2 className="font-semibold text-lg">Spiriter Assistant</h2>
             </div>
             <button 
               onClick={toggleMinimized}
-              className="text-white hover:bg-blue-700 rounded p-1"
+              className="text-white hover:bg-purple-700 rounded p-1"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 5.25l-7.5 7.5-7.5-7.5m15 6l-7.5 7.5-7.5-7.5" />
@@ -172,7 +172,7 @@ export default function Spiriter({ selectedPlayers, budget, isExpanded }: Spirit
                 <div 
                   className={`max-w-[80%] rounded-lg p-3 ${
                     message.role === 'user' 
-                      ? 'bg-blue-500 text-white rounded-tr-none' 
+                      ? 'bg-purple-500 text-white rounded-tr-none' 
                       : 'bg-gray-100 text-gray-800 rounded-tl-none'
                   }`}
                 >
@@ -201,13 +201,13 @@ export default function Spiriter({ selectedPlayers, budget, isExpanded }: Spirit
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask Spiriter for team suggestions..."
-                className="flex-1 border rounded-l-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 border rounded-l-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 disabled={isLoading}
               />
               <button
                 type="submit"
                 disabled={isLoading || !input.trim()}
-                className="bg-blue-600 text-white rounded-r-lg px-4 py-2 hover:bg-blue-700 disabled:bg-blue-300"
+                className="bg-purple-600 text-white rounded-r-lg px-4 py-2 hover:bg-purple-700 disabled:bg-purple-300"
               >
                 Send
               </button>

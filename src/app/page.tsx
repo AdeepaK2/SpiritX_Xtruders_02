@@ -1,101 +1,111 @@
+'use client'
+
+import { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { FaCog } from "react-icons/fa";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [mounted, setMounted] = useState(false);
+  
+  // Animation trigger on mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  return (
+    <div className="h-screen w-screen flex flex-col items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-800 to-indigo-900 overflow-hidden fixed inset-0">
+      {/* Background animated elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-10 -right-10 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply opacity-20 filter blur-3xl animate-blob"></div>
+        <div className="absolute top-0 -left-4 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply opacity-20 filter blur-3xl animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-8 left-20 w-80 h-80 bg-purple-600 rounded-full mix-blend-multiply opacity-20 filter blur-3xl animate-blob animation-delay-4000"></div>
+      </div>
+
+      {/* Admin Panel Button - Right Side */}
+      <Link 
+        href="/admin" 
+        className={`absolute top-6 right-6 px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white rounded-lg font-medium text-sm flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 z-20 ${mounted ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10'}`}
+        style={{ transitionDelay: '900ms' }}
+      >
+        <FaCog className="text-white" />
+        Admin Panel
+      </Link>
+
+      {/* Main content container */}
+      <div className="relative z-10 flex flex-col items-center justify-center gap-6 px-4 py-6 text-white max-h-full">
+        {/* Logo with animation */}
+        <div className={`transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10'}`}>
+          <Image
+            src="/logo.png"
+            alt="SpiritX Logo"
+            width={240}
+            height={100}
+            priority
+            className="drop-shadow-xl"
+          />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        
+        {/* Tagline */}
+        <h1 className={`text-lg md:text-xl font-bold text-center max-w-lg transition-all duration-1000 delay-300 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          Build your ultimate cricket team and compete in the elite university league
+        </h1>
+        
+        {/* Buttons */}
+        <div className="flex flex-col sm:flex-row items-center gap-4 mt-2">
+          {/* Login button */}
+          <Link href="/login" 
+            className={`px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-lg font-medium text-base shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 delay-500 w-40 text-center ${mounted ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'}`}>
+            Login
+          </Link>
+          
+          {/* Sign up button */}
+          <Link href="/signup" 
+            className={`px-6 py-3 bg-white text-indigo-800 hover:bg-gray-100 rounded-lg font-medium text-base shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 delay-700 w-40 text-center ${mounted ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10'}`}>
+            Sign Up
+          </Link>
+        </div>
+        
+        {/* Optional: Feature highlights */}
+        <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 max-w-4xl transition-all duration-1000 delay-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20'}`}>
+          <div className="bg-white/10 backdrop-blur-md p-4 rounded-lg text-center">
+            <h3 className="font-bold mb-1">Build Your Team</h3>
+            <p className="text-xs md:text-sm text-gray-200">Select players from universities around the country</p>
+          </div>
+          <div className="bg-white/10 backdrop-blur-md p-4 rounded-lg text-center">
+            <h3 className="font-bold mb-1">Compete</h3>
+            <p className="text-xs md:text-sm text-gray-200">Join leagues and tournaments to prove your team's worth</p>
+          </div>
+          <div className="bg-white/10 backdrop-blur-md p-4 rounded-lg text-center">
+            <h3 className="font-bold mb-1">AI Assistant</h3>
+            <p className="text-xs md:text-sm text-gray-200">Get help from Spiriter AI to optimize your team</p>
+          </div>
+        </div>
+      </div>
+      
+      {/* Add animation keyframes to the styles */}
+      <style jsx global>{`
+        @keyframes blob {
+          0% { transform: translate(0px, 0px) scale(1); }
+          33% { transform: translate(30px, -50px) scale(1.1); }
+          66% { transform: translate(-20px, 20px) scale(0.9); }
+          100% { transform: translate(0px, 0px) scale(1); }
+        }
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+        body {
+          margin: 0;
+          padding: 0;
+          overflow: hidden;
+        }
+      `}</style>
     </div>
   );
 }

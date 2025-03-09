@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { FaSort, FaSortUp, FaSortDown, FaSearch, FaTimes } from 'react-icons/fa';
+import { FaSort, FaSortUp, FaSortDown, FaSearch, FaTimes, FaInfoCircle } from 'react-icons/fa';
 import PlayerStatsView from '@/components/features/PlayerStatsView';
 
 // Define player type based on your API response
@@ -157,6 +157,9 @@ const PlayersPage = () => {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Players</h1>
         <p className="text-gray-600">View and analyze all players statistics</p>
+        <p className="text-sm text-indigo-600 mt-2 flex items-center">
+          <FaInfoCircle className="mr-1" /> Click each player to view their full stats
+        </p>
       </div>
       
       {/* Filters and search */}
@@ -264,7 +267,7 @@ const PlayersPage = () => {
               filteredAndSortedPlayers.map((player) => (
                 <tr 
                   key={player._id} 
-                  className="hover:bg-gray-50 cursor-pointer transition-colors"
+                  className="hover:bg-indigo-50 hover:shadow-sm cursor-pointer transition-colors"
                   onClick={() => handlePlayerClick(player)}
                 >
                   <td className="px-6 py-4 whitespace-nowrap">

@@ -148,34 +148,36 @@ const ChatbotView = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-800 flex items-center">
-          <FaRobot className="mr-3 text-blue-600" />
+    <div className="h-[calc(100vh-64px)] flex flex-col w-full max-w-full overflow-hidden px-2">
+      <div className="mb-2">
+        <h1 className="text-xl md:text-2xl font-bold text-gray-800 flex items-center">
+          <FaRobot className="mr-3 text-indigo-600" />
           Spiriter AI Assistant
         </h1>
-        <p className="text-gray-600 mt-2">
+        <p className="text-gray-600 text-sm">
           Get help building your cricket team from our AI assistant
         </p>
       </div>
       
       {loading ? (
-        <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-          <div className="inline-block w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-          <p className="text-lg text-gray-600">Loading your team data...</p>
+        <div className="bg-white rounded-lg shadow-lg p-8 text-center flex-1 flex items-center justify-center">
+          <div>
+            <div className="inline-block w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-lg text-gray-600">Loading your team data...</p>
+          </div>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden flex-1 flex flex-col">
           {/* Chat Header */}
-          <div className="bg-blue-600 text-white p-4 flex items-center">
-            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center mr-3">
-              <span className="text-blue-600 font-bold text-xl">S</span>
+          <div className="bg-gradient-to-r from-indigo-800 to-purple-700 text-white p-3 flex items-center">
+            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center mr-3 shadow-md">
+              <span className="text-indigo-700 font-bold text-xl">S</span>
             </div>
             <h2 className="font-semibold text-xl">Spiriter Assistant</h2>
           </div>
           
-          {/* Chat Messages */}
-          <div className="h-[400px] p-4 overflow-y-auto">
+          {/* Chat Messages - Using flex-1 with overflow-y-auto for internal scrolling */}
+          <div className="flex-1 p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
             {messages.map((message, index) => (
               <div 
                 key={index} 
@@ -184,7 +186,7 @@ const ChatbotView = () => {
                 <div 
                   className={`max-w-[80%] rounded-lg p-3 ${
                     message.role === 'user' 
-                      ? 'bg-blue-500 text-white rounded-tr-none' 
+                      ? 'bg-indigo-600 text-white rounded-tr-none' 
                       : 'bg-gray-100 text-gray-800 rounded-tl-none'
                   }`}
                 >
@@ -197,9 +199,9 @@ const ChatbotView = () => {
               <div className="flex justify-start mb-4">
                 <div className="bg-gray-100 text-gray-800 rounded-lg rounded-tl-none p-3 max-w-[80%]">
                   <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
                   </div>
                 </div>
               </div>
@@ -207,20 +209,20 @@ const ChatbotView = () => {
           </div>
           
           {/* Input Form */}
-          <form onSubmit={handleSendMessage} className="p-4 border-t">
+          <form onSubmit={handleSendMessage} className="p-3 border-t border-gray-200">
             <div className="flex">
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask Spiriter for team suggestions..."
-                className="flex-1 border rounded-l-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 border border-gray-300 rounded-l-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 disabled={isLoading}
               />
               <button
                 type="submit"
                 disabled={isLoading || !input.trim()}
-                className="bg-blue-600 text-white rounded-r-lg px-6 py-3 hover:bg-blue-700 disabled:bg-blue-300 font-medium"
+                className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-r-lg px-6 py-3 hover:from-indigo-700 hover:to-purple-700 disabled:from-indigo-300 disabled:to-purple-300 font-medium transition-all duration-200"
               >
                 Send
               </button>
