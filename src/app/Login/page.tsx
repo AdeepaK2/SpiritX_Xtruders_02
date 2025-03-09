@@ -1,10 +1,10 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation"; // Import useRouter
+import { useRouter } from "next/navigation";
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
-  const router = useRouter(); // Initialize useRouter
+  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -13,13 +13,17 @@ export default function Login() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
+  
     const data = await res.json();
-    if (data.token) {
-      localStorage.setItem("token", data.token); // Store token in localStorage
-      router.push("/[userId]/dashboard"); // Redirect to the dashboard page
+  
+    if (data.token && data.userId) {
+      localStorage.setItem("token", data.token); // Store token
+      router.push(`/${data.userId}/dashboard`); // Redirect to user-specific dashboard
     }
+  
     alert(data.message || data.error);
   };
+  
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-blue-300">
