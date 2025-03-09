@@ -54,15 +54,10 @@ const AdminLogin = () => {
         return;
       }
 
-<<<<<<< HEAD
-      localStorage.setItem("adminToken", data.token);
-      router.push("/admin");
-=======
       // If test credentials don't match, throw error
       // In production, this would be replaced with a real API call
       throw new Error("Invalid username or password");
       
->>>>>>> origin/main
     } catch (err: any) {
       setError(err.message);
     } finally {
