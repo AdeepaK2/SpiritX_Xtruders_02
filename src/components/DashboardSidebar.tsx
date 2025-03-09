@@ -1,7 +1,8 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { FaUsers, FaClipboardList, FaUserFriends, FaMoneyBillWave, FaTrophy, FaRobot, FaHome } from 'react-icons/fa';
+import Image from 'next/image';
+import { FaUsers, FaClipboardList, FaUserFriends, FaMoneyBillWave, FaTrophy, FaRobot, FaHome, FaUser } from 'react-icons/fa';
 
 interface DashboardSidebarProps {
   activeFeature: string;
@@ -13,13 +14,14 @@ const DashboardSidebar = ({ activeFeature, onFeatureSelect }: DashboardSidebarPr
   const userId = params.userId;
   
   const navItems = [
-    { path: '', label: 'Dashboard Home', icon: <FaHome className="text-xl mr-3" /> },
-    { path: 'players', label: 'Players View', icon: <FaUsers className="text-xl mr-3" /> },
-    { path: 'select-team', label: 'Select Your Team', icon: <FaClipboardList className="text-xl mr-3" /> },
-    { path: 'team', label: 'Team View', icon: <FaUserFriends className="text-xl mr-3" /> },
-    { path: 'budget', label: 'Budget View', icon: <FaMoneyBillWave className="text-xl mr-3" /> },
-    { path: 'leaderboard', label: 'Leaderboard', icon: <FaTrophy className="text-xl mr-3" /> },
-    { path: 'userdata', label: 'User Details', icon: <FaRobot className="text-xl mr-3" /> },
+    { path: '', label: 'Dashboard Home', icon: <FaHome className="text-lg mr-2" /> },
+    { path: 'players', label: 'Players View', icon: <FaUsers className="text-lg mr-2" /> },
+    { path: 'select-team', label: 'Select Your Team', icon: <FaClipboardList className="text-lg mr-2" /> },
+    { path: 'team', label: 'Team', icon: <FaUserFriends className="text-lg mr-2" /> },
+    { path: 'budget', label: 'Budget View', icon: <FaMoneyBillWave className="text-lg mr-2" /> },
+    { path: 'leaderboard', label: 'Leaderboard', icon: <FaTrophy className="text-lg mr-2" /> },
+    { path: 'chatbot', label: 'Spiriter AI', icon: <FaRobot className="text-lg mr-2" /> },
+    { path: 'userdata', label: 'User Details', icon: <FaUser className="text-lg mr-2" /> },
   ];
   
   // Check if a route is active
@@ -28,19 +30,25 @@ const DashboardSidebar = ({ activeFeature, onFeatureSelect }: DashboardSidebarPr
   };
   
   return (
-    <div className="h-full w-64 bg-gradient-to-b from-indigo-900 to-purple-900 text-white flex flex-col py-6 px-3 shadow-xl rounded-r-xl">
-      <div className="mb-8 px-4">
-        <h2 className="text-2xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
-          SpiritX
-        </h2>
+    <div className="h-screen max-h-screen w-56 bg-gradient-to-b from-indigo-900 to-purple-900 text-white flex flex-col py-4 px-2 shadow-xl rounded-r-xl overflow-hidden">
+      <div className="mb-4 px-2">
+        <div className="flex justify-center items-center">
+          <Image 
+            src="/logo.png" 
+            alt="SpiritX Logo" 
+            width={120} 
+            height={40}
+            className="object-contain"
+          />
+        </div>
       </div>
-      <nav className="flex-1">
-        <ul className="space-y-3">
+      <nav className="flex-1 overflow-hidden">
+        <ul className="space-y-1.5">
           {navItems.map((item) => (
             <li key={item.path}>
               <button
                 onClick={() => onFeatureSelect(item.path)}
-                className={`w-full flex items-center px-4 py-3 rounded-lg transition-all duration-200 font-medium
+                className={`w-full flex items-center px-3 py-2 rounded-lg transition-all duration-200 font-medium text-sm
                   ${isActive(item.path) 
                     ? 'bg-indigo-600 text-white shadow-md transform translate-x-1' 
                     : 'text-gray-200 hover:bg-indigo-700/50 hover:translate-x-1'}`}

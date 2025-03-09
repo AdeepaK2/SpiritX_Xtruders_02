@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { FaSort, FaSortUp, FaSortDown, FaSearch } from 'react-icons/fa';
+import { FaSort, FaSortUp, FaSortDown, FaSearch, FaTimes, FaInfoCircle } from 'react-icons/fa';
+import PlayerStatsView from '@/components/features/PlayerStatsView';
 
 // Define player type based on your API response
 interface Player {
@@ -35,6 +36,7 @@ const PlayersPage = () => {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
 
   useEffect(() => {
     const fetchPlayers = async () => {
@@ -117,6 +119,16 @@ const PlayersPage = () => {
     return num.toFixed(2);
   };
 
+  // Handle player selection
+  const handlePlayerClick = (player: Player) => {
+    setSelectedPlayer(player);
+  };
+  
+  // Close player stats modal
+  const closePlayerStats = () => {
+    setSelectedPlayer(null);
+  };
+
   if (loading) {
     return (
       <div className="w-full flex justify-center items-center h-96">
@@ -145,6 +157,9 @@ const PlayersPage = () => {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Players</h1>
         <p className="text-gray-600">View and analyze all players statistics</p>
+        <p className="text-sm text-indigo-600 mt-2 flex items-center">
+          <FaInfoCircle className="mr-1" /> Click each player to view their full stats
+        </p>
       </div>
       
       {/* Filters and search */}
@@ -250,7 +265,11 @@ const PlayersPage = () => {
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredAndSortedPlayers.length > 0 ? (
               filteredAndSortedPlayers.map((player) => (
-                <tr key={player._id} className="hover:bg-gray-50">
+                <tr 
+                  key={player._id} 
+                  className="hover:bg-indigo-50 hover:shadow-sm cursor-pointer transition-colors"
+                  onClick={() => handlePlayerClick(player)}
+                >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="font-medium text-gray-900">{player.name}</div>
                   </td>
@@ -297,6 +316,11 @@ const PlayersPage = () => {
       <div className="mt-4 text-sm text-gray-600">
         Total: {filteredAndSortedPlayers.length} players
       </div>
+
+      {/* Player Stats Modal */}
+      {selectedPlayer && (
+        <PlayerStatsView player={selectedPlayer} onClose={closePlayerStats} />
+      )}
     </div>
   );
 };

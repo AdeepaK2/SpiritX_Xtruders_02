@@ -1,19 +1,125 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import { FaUsers, FaClipboardList, FaRobot, FaChartBar } from 'react-icons/fa';
+import { useParams, useRouter } from 'next/navigation';
+import { FaUsers, FaClipboardList, FaRobot, FaChartBar, FaUserFriends } from 'react-icons/fa';
 
 // Import your feature components
 import PlayersView from '@/components/features/PlayersView';
 import SelectTeamView from '@/components/features/SelectTeamView';
 import UserDataView from '@/components/features/UserDataView';
-import DashboardSidebar from '@/components/DashboardSidebar'; // We'll create this next
+import TeamView from '@/components/features/TeamView'; 
+import BudgetView from '@/components/features/BudgetView';
+import LeaderboardView from '@/components/features/LeaderboardView';
+import ChatbotView from '@/components/features/ChatbotView'; // Add this import
+import DashboardSidebar from '@/components/DashboardSidebar';
+
+// Add Team interface
+interface Player {
+  _id: string;
+  name: string;
+  university: string;
+  category: string;
+  playerValue: number;
+  playerPoints: number;
+}
+
+interface Team {
+  _id: string;
+  name: string;
+  userId: string;
+  players: Player[];
+  totalValue: number;
+  createdAt: string;
+  updatedAt: string;
+}
 
 const Dashboard = () => {
   const params = useParams();
+  const router = useRouter();
   const userId = Array.isArray(params.userId) ? params.userId[0] : params.userId ?? '';
-  const [activeFeature, setActiveFeature] = useState(''); // Empty string for dashboard overview
+  const [activeFeature, setActiveFeature] = useState('');
+  const [team, setTeam] = useState<Team | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isUserValidated, setIsUserValidated] = useState(false);
+  
+  // Check if user exists before rendering dashboard
+  useEffect(() => {
+    const validateUser = async () => {
+      try {
+        if (!userId) {
+          router.push('/');
+          return;
+        }
+
+        const response = await fetch(`/api/user?id=${userId}`);
+        
+        if (!response.ok) {
+          console.error("User not found or error occurred");
+          router.push('/');
+          return;
+        }
+
+        const data = await response.json();
+        if (!data.user) {
+          console.error("User data not found");
+          router.push('/');
+          return;
+        }
+        
+        // User exists and is valid
+        setIsUserValidated(true);
+      } catch (error) {
+        console.error("Error validating user:", error);
+        router.push('/');
+      }
+    };
+
+    validateUser();
+  }, [userId, router]);
+  
+  // Fetch team data only if user is validated
+  useEffect(() => {
+    if (!isUserValidated) return;
+    
+    const fetchTeamData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/team?userId=${userId}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.teams && data.teams.length > 0) {
+            setTeam(data.teams[0]);
+          } else {
+            setTeam(null);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching team data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchTeamData();
+  }, [userId, activeFeature, isUserValidated]);
+
+  // Don't render anything while validating user
+  if (!isUserValidated) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Verifying user...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Team completeness calculation
+  const playerCount = team?.players?.length || 0;
+  const maxPlayers = 11;
+  const completionPercentage = (playerCount / maxPlayers) * 100;
   
   const renderFeature = () => {
     switch (activeFeature) {
@@ -22,11 +128,13 @@ const Dashboard = () => {
       case 'select-team':
         return <SelectTeamView />;
       case 'team':
-        return <div className="p-6 bg-white rounded-lg shadow">Team View Content</div>;
+        return <TeamView />;
       case 'budget':
-        return <div className="p-6 bg-white rounded-lg shadow">Budget View Content</div>;
+        return <BudgetView onNavigate={setActiveFeature} />; 
       case 'leaderboard':
-        return <div className="p-6 bg-white rounded-lg shadow">Leaderboard Content</div>;
+        return <LeaderboardView />;
+      case 'chatbot':
+        return <ChatbotView />; // Add this case
       case 'userdata':
         return <UserDataView />;
       default:
@@ -38,8 +146,58 @@ const Dashboard = () => {
   return (
     <div className="flex h-screen">
       <DashboardSidebar activeFeature={activeFeature} onFeatureSelect={setActiveFeature} />
-      <div className="flex-1 p-8 bg-gray-50 overflow-y-auto">
-        {renderFeature()}
+      <div className="flex-1 overflow-y-auto">
+        {/* Team Completeness Status Bar */}
+        <div className="bg-white border-b shadow-sm p-3 sticky top-0 z-10">
+          <div className="container mx-auto flex items-center justify-between">
+            <div className="flex items-center">
+              <FaUserFriends className="text-indigo-600 mr-2" />
+              <span className="font-medium">
+                Team Status: <span className="text-indigo-700">{playerCount}/{maxPlayers} players selected</span>
+              </span>
+            </div>
+            
+            <div className="flex items-center w-1/3">
+              <div className="w-full bg-gray-200 rounded-full h-2.5 mr-2">
+                <div 
+                  className={`h-2.5 rounded-full ${
+                    playerCount === maxPlayers 
+                      ? 'bg-green-500' 
+                      : playerCount >= 7 
+                        ? 'bg-yellow-500' 
+                        : 'bg-indigo-500'
+                  }`} 
+                  style={{ width: `${completionPercentage}%` }}
+                ></div>
+              </div>
+              <span className="text-xs text-gray-600">{Math.round(completionPercentage)}%</span>
+            </div>
+            
+            {team && (
+              <div className="hidden md:block">
+                <span className="text-sm text-gray-600">
+                  Team: <span className="font-medium text-gray-800">{team.name}</span>
+                </span>
+              </div>
+            )}
+            
+            <div>
+              {playerCount < maxPlayers && (
+                <button 
+                  onClick={() => setActiveFeature('select-team')}
+                  className="text-xs bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700 transition-colors"
+                >
+                  {team ? 'Complete Team' : 'Create Team'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {/* Main Content */}
+        <div className="p-8 bg-gray-50">
+          {renderFeature()}
+        </div>
       </div>
     </div>
   );
