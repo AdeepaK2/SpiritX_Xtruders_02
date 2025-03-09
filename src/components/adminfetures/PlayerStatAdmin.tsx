@@ -21,15 +21,15 @@ interface Player {
 type SortField = 'name' | 'university' | 'category' | 'playerValue' | 'playerPoints' | 'battingAvg';
 type SortDirection = 'asc' | 'desc';
 
-const PlayerStats = () => {
+const PlayerStatAdmin = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
-  const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("All Categories");
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchPlayers = async () => {
@@ -96,10 +96,19 @@ const PlayerStats = () => {
       setSortDirection('asc');
     }
   };
-  
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) return '↕';
     return sortDirection === 'asc' ? '↑' : '↓';
+  };
+  
+  const togglePlayerSelection = (playerId: string) => {
+    setSelectedPlayers(prev => 
+      prev.includes(playerId)
+        ? prev.filter(id => id !== playerId)
+        : prev.length < 11
+          ? [...prev, playerId]
+          : prev
+    );
   };
 
   const filteredPlayers = players
@@ -110,18 +119,8 @@ const PlayerStats = () => {
     })
     .sort(sortPlayers);
 
-  const togglePlayerSelection = (playerId: string) => {
-    if (selectedPlayers.includes(playerId)) {
-      setSelectedPlayers(selectedPlayers.filter(id => id !== playerId));
-    } else {
-      if (selectedPlayers.length < 11) {
-        setSelectedPlayers([...selectedPlayers, playerId]);
-      }
-    }
-  };
-
-  if (loading) return <p className="text-center p-8">Loading players...</p>;
-  if (error) return <p className="text-center text-red-500 p-8">{error}</p>;
+  if (loading) return <div className="p-6 text-center">Loading players...</div>;
+  if (error) return <div className="p-6 text-center text-red-500">{error}</div>;
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -267,4 +266,4 @@ const PlayerStats = () => {
   );
 };
 
-export default PlayerStats;
+export default PlayerStatAdmin;

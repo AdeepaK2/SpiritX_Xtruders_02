@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import AdminSidebar from '@/components/adminfetures/AdminSidebar';
 import TournamentSummary from '@/components/adminfetures/TournamentSummary';
+import AdminPlayersView from '@/components/adminfetures/AdminPlayersView';
+import PlayerStatAdmin from '@/components/adminfetures/PlayerStatAdmin';
 import { FaChartLine, FaTrophy, FaSpinner } from 'react-icons/fa';
 
 export default function AdminPage() {
@@ -48,21 +50,9 @@ export default function AdminPage() {
   const renderContent = () => {
     switch (activeFeature) {
       case 'players':
-        return (
-          <div className="p-6">
-            <h1 className="text-2xl font-bold mb-4">Players Management</h1>
-            <p>View and manage all registered players here.</p>
-            {/* Player management content will go here */}
-          </div>
-        );
+        return <AdminPlayersView />;
       case 'player-stats':
-        return (
-          <div className="p-6">
-            <h1 className="text-2xl font-bold mb-4">Player Statistics</h1>
-            <p>View detailed statistics for all players.</p>
-            {/* Player stats content will go here */}
-          </div>
-        );
+        return <PlayerStatAdmin />;
       case 'tournament-summary':
         return <TournamentSummary />;
       case 'match-management':

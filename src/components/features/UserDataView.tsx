@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { FaUser, FaCoins, FaTrophy, FaUserFriends, FaCalendarAlt } from 'react-icons/fa';
+import Image from 'next/image';
+import { FaUser, FaCoins, FaTrophy, FaUserFriends, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaCamera } from 'react-icons/fa';
 
 interface User {
   _id: string;
@@ -13,6 +14,7 @@ interface User {
   rank?: number;
   accountCreationDate: string;
   lastLoginDate: string;
+  profileIcon: number; // Simple number field instead of complex object
 }
 
 interface Team {
@@ -30,6 +32,9 @@ const UserDataView = () => {
   const [team, setTeam] = useState<Team | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [currentProfileImage, setCurrentProfileImage] = useState(1);
+  const [updating, setUpdating] = useState(false);
+  const [showImageSelector, setShowImageSelector] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -78,6 +83,66 @@ const UserDataView = () => {
     }
   }, [userId]);
 
+  const updateProfileImage = async (iconNumber: number) => {
+    if (!user || updating) return;
+    
+    try {
+      setUpdating(true);
+      
+      const response = await fetch(`/api/user/profile-image?id=${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          profileIcon: iconNumber
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        // Update the user state with the new profile icon
+        if (result.user) {
+          setUser(prevUser => ({
+            ...prevUser!,
+            profileIcon: result.user.profileIcon
+          }));
+          setCurrentProfileImage(iconNumber);
+        }
+      } else {
+        console.error('Failed to update profile image');
+      }
+    } catch (error) {
+      console.error('Error updating profile image:', error);
+    } finally {
+      setUpdating(false);
+    }
+  };
+  
+  const cycleProfileImage = (direction: 'next' | 'prev') => {
+    const currentNum = user?.profileIcon 
+      ? user.profileIcon
+      : currentProfileImage;
+      
+    let newImageNum = direction === 'next' 
+      ? (currentNum % 5) + 1 // Cycle forward (1->2->3->4->5->1)
+      : (currentNum - 1) || 5; // Cycle backward (5<-1<-2<-3<-4<-5)
+      
+    updateProfileImage(newImageNum);
+  };
+
+  useEffect(() => {
+    if (user?.profileIcon) {
+      try {
+        const imageNum = user.profileIcon;
+        console.log("Setting current profile image to:", imageNum);
+        setCurrentProfileImage(imageNum);
+      } catch (err) {
+        console.error("Error setting profile image:", err);
+      }
+    }
+  }, [user]);
+
   if (loading) {
     return (
       <div className="w-full flex justify-center items-center h-96">
@@ -116,11 +181,31 @@ const UserDataView = () => {
         <div className="lg:col-span-1">
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex flex-col items-center mb-6">
-              <div className="h-20 w-20 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center mb-4">
-                <FaUser className="text-white text-3xl" />
+              {/* Larger profile image with navigation buttons */}
+              <div className="relative mb-4">
+                <div className="h-32 w-32 rounded-full overflow-hidden">
+                  <Image 
+                    src={`/proicons/${user?.profileIcon || currentProfileImage}.png`}
+                    alt={`${user?.username}'s profile`}
+                    width={128}
+                    height={128}
+                    className="object-cover w-full h-full"
+                  />
+                </div>
+                
+                {/* Camera button to open image selector */}
+                <button 
+                  onClick={() => setShowImageSelector(true)}
+                  disabled={updating}
+                  className="absolute bottom-0 right-0 bg-indigo-600 rounded-full p-2 shadow hover:bg-indigo-700 disabled:opacity-50 text-white"
+                  aria-label="Change profile image"
+                >
+                  <FaCamera />
+                </button>
               </div>
-              <h2 className="text-2xl font-bold">{user.username}</h2>
-              <p className="text-gray-600">{user.email}</p>
+              
+              <h2 className="text-2xl font-bold">{user?.username}</h2>
+              <p className="text-gray-600">{user?.email}</p>
             </div>
             
             <div className="grid grid-cols-1 gap-4">
@@ -245,6 +330,49 @@ const UserDataView = () => {
           </div>
         </div>
       </div>
+
+      {/* Profile Image Selection Overlay */}
+      {showImageSelector && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-5 max-w-xs w-full">
+            <h3 className="text-lg font-bold mb-3">Select Profile Image</h3>
+            
+            <div className="flex justify-between space-x-2 mb-4">
+              {[1, 2, 3, 4, 5].map((imgNum) => (
+                <button
+                  key={imgNum}
+                  onClick={() => {
+                    updateProfileImage(imgNum);
+                    setShowImageSelector(false);
+                  }}
+                  className={`relative rounded-full overflow-hidden border-2 w-12 h-12 ${
+                    (user?.profileIcon || currentProfileImage) === imgNum
+                      ? 'border-indigo-600'
+                      : 'border-transparent'
+                  }`}
+                >
+                  <Image
+                    src={`/proicons/${imgNum}.png`}
+                    alt={`Profile option ${imgNum}`}
+                    width={48}
+                    height={48}
+                    className="w-full h-full"
+                  />
+                </button>
+              ))}
+            </div>
+            
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={() => setShowImageSelector(false)}
+                className="px-3 py-1 bg-gray-200 rounded-md hover:bg-gray-300 text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
