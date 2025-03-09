@@ -40,6 +40,7 @@ export default function AdminPlayersPage() {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const router = useRouter();
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     fetchPlayers();
@@ -163,21 +164,27 @@ export default function AdminPlayersPage() {
       {/* Filters and search */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div className="relative w-full md:w-64">
-          <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
           <input
             type="text"
             placeholder="Search players..."
-            className="pl-10 pr-4 py-2 w-full border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            className="pl-10 pr-4 py-2 w-full border rounded-lg focus:ring-2 focus:ring-purple-700 focus:border-purple-700"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-
+      
         <div className="flex gap-3">
+        <button
+        onClick={() => setIsCreateModalOpen(true)}
+  className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition-colors"
+>
+  Create New Player
+</button>
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            className="border bg-purple-500 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-700 focus:border-purple-700"
           >
             <option value="all">All Categories</option>
             <option value="Batsman">Batsmen</option>
@@ -189,7 +196,7 @@ export default function AdminPlayersPage() {
 
       {/* Players table */}
       <div className="overflow-x-auto bg-white rounded-lg shadow">
-        <table className="min-w-full divide-y divide-gray-200">
+        <table className="w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
               <th
@@ -302,13 +309,16 @@ export default function AdminPlayersPage() {
                   </td>
 <td className="px-6 py-4 whitespace-nowrap">
   <div className="flex gap-2">
-    <button
-      onClick={() => router.push(`/admin/playersView/edit/${player._id}`)}
-      className="bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 transition shadow-md flex items-center"
-      title="Edit"
-    >
-      <Pencil size={18} />
-    </button>
+  <button
+  onClick={(e) => {
+    e.stopPropagation();
+    router.push(`/admin/playersView/edit/${player._id}`);
+  }}
+  className="bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 transition shadow-md flex items-center"
+  title="Edit"
+>
+  <Pencil size={18} />
+</button>
     <button
       onClick={() => handleDelete(player._id)}
       className={`p-2 rounded-md ${
@@ -334,6 +344,125 @@ export default function AdminPlayersPage() {
             )}
           </tbody>
         </table>
+        {isCreateModalOpen && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4">
+    <div className="bg-white rounded-lg p-6 w-full max-w-md">
+      <h2 className="text-xl font-bold mb-4">Create New Player</h2>
+      <form
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const formData = new FormData(e.currentTarget);
+          const playerData = {
+            name: formData.get("name") as string,
+            university: formData.get("university") as string,
+            category: formData.get("category") as "Batsman" | "Bowler" | "All-rounder",
+            totalRuns: Number(formData.get("totalRuns")),
+            ballsFaced: Number(formData.get("ballsFaced")),
+            inningsPlayed: Number(formData.get("inningsPlayed")),
+            wickets: Number(formData.get("wickets")),
+            oversBowled: Number(formData.get("oversBowled")),
+            runsConceded: Number(formData.get("runsConceded")),
+            playerPoints: Number(formData.get("playerPoints")),
+            playerValue: Number(formData.get("playerValue")),
+          };
+
+          try {
+            const response = await axios.post("/api/admin/players", playerData);
+            if (response.data.success) {
+              setPlayers((prev) => [...prev, response.data.data]); // Add new player to the list
+              setIsCreateModalOpen(false); // Close the modal
+            }
+          } catch (err: any) {
+            setError(err.response?.data?.error || "Failed to create player");
+          }
+        }}
+        className="space-y-4"
+      >
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Name</label>
+          <input
+            type="text"
+            name="name"
+            required
+            className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">University</label>
+          <input
+            type="text"
+            name="university"
+            required
+            className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Category</label>
+          <select
+            name="category"
+            required
+            className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="Batsman">Batsman</option>
+            <option value="Bowler">Bowler</option>
+            <option value="All-rounder">All-rounder</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Total Runs</label>
+          <input
+            type="number"
+            name="totalRuns"
+            defaultValue={0}
+            className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Wickets</label>
+          <input
+            type="number"
+            name="wickets"
+            defaultValue={0}
+            className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Player Value</label>
+          <input
+            type="number"
+            name="playerValue"
+            defaultValue={0}
+            className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Player Points</label>
+          <input
+            type="number"
+            name="playerPoints"
+            defaultValue={0}
+            className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => setIsCreateModalOpen(false)}
+            className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600"
+          >
+            Create
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
       </div>
 
       {/* Total players count */}
