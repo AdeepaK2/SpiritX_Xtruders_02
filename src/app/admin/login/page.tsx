@@ -26,38 +26,41 @@ const AdminLogin = () => {
     setError("");
 
     try {
-      // Test credentials - we support multiple users for testing
-      const validCredentials = [
-        { username: 'admin', password: 'admin123' },
-        { username: 'renu', password: 'renu123' }
-      ];
-      
-      const isValid = validCredentials.some(
-        cred => cred.username === username && cred.password === password
+      // Call the admin API to verify credentials
+      const response = await fetch(
+        `/api/admin?verifyLogin=true&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
       );
 
-      if (isValid) {
-        // Create a mock token
-        const token = "valid-token-" + Math.random().toString(36).substring(2);
+      const data = await response.json();
+
+      if (response.ok) {
+        // Login successful
+        
+        // Create a token from the admin data
+        const token = btoa(JSON.stringify({
+          id: data.admin._id,
+          username: data.admin.username,
+          role: data.admin.role,
+          exp: Date.now() + (24 * 60 * 60 * 1000) // 24 hours expiration
+        }));
         
         // Store in localStorage as backup
         localStorage.setItem("adminToken", token);
+        localStorage.setItem("adminData", JSON.stringify(data.admin));
         
-        // Set cookie with 1 day expiration
+        // Set cookie with 24 hour expiration
         setCookie('adminToken', token, { 
-          maxAge: 60 * 60 * 24, // 1 day
+          maxAge: 60 * 60 * 24, // 24 hours
           path: '/',
         });
         
         // Redirect to admin page
         router.push("/admin");
         return;
+      } else {
+        // Login failed
+        throw new Error(data.error || "Invalid username or password");
       }
-
-      // If test credentials don't match, throw error
-      // In production, this would be replaced with a real API call
-      throw new Error("Invalid username or password");
-      
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -84,7 +87,7 @@ const AdminLogin = () => {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-3 py-2 border-2 border-purple-500 rounded-lg focus:outline-none focus:ring focus:ring-purple-300 bg-white"
+                className="w-full px-3 py-2 border-2 border-purple-500 rounded-lg focus:outline-none focus:ring focus:ring-purple-300 bg-white text-black"
                 required
               />
             </div>
@@ -94,7 +97,7 @@ const AdminLogin = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 border-2 border-purple-500 rounded-lg focus:outline-none focus:ring focus:ring-purple-300 bg-white"
+                className="w-full px-3 py-2 border-2 border-purple-500 rounded-lg focus:outline-none focus:ring focus:ring-purple-300 bg-white text-black"
                 required
               />
             </div>
@@ -106,13 +109,6 @@ const AdminLogin = () => {
               {loading ? "Logging in..." : "Login"}
             </button>
           </form>
-          
-          {/* Add test credential hint for development */}
-          <div className="mt-4 text-white/70 text-sm text-center">
-            <p>Test credentials:</p>
-            <p>Username: admin | Password: admin123</p>
-            <p>Username: renu | Password: renu123</p>
-          </div>
         </div>
       </div>
     </div>

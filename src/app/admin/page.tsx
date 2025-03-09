@@ -16,26 +16,60 @@ export default function AdminPage() {
   const [teamCount, setTeamCount] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [adminData, setAdminData] = useState<any>(null);
 
   useEffect(() => {
-    // Check authentication using cookies first (this works with the middleware)
+    // Check authentication using cookies
     const token = getCookie('adminToken');
     
-    if (token) {
-      // Token exists in cookie, we're authenticated
-      setIsAuthenticated(true);
-      fetchStats();
-      return;
-    }
-    
-    // Fallback to localStorage check
-    const localToken = localStorage.getItem('adminToken');
-    if (localToken) {
-      setIsAuthenticated(true);
-      fetchStats();
+    if (!token) {
+      // No token in cookies, try localStorage as fallback
+      const localToken = localStorage.getItem('adminToken');
+      if (!localToken) {
+        // No token found anywhere, redirect to login
+        router.push('/admin/login');
+        return;
+      }
+      
+      // Token found in localStorage, validate it
+      try {
+        const tokenData = JSON.parse(atob(localToken));
+        // Check if token is expired
+        if (tokenData.exp < Date.now()) {
+          localStorage.removeItem('adminToken');
+          localStorage.removeItem('adminData');
+          router.push('/admin/login');
+          return;
+        }
+        
+        // Token is valid
+        setAdminData(JSON.parse(localStorage.getItem('adminData') || '{}'));
+        setIsAuthenticated(true);
+        fetchStats();
+      } catch (error) {
+        console.error('Invalid token format:', error);
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminData');
+        router.push('/admin/login');
+      }
     } else {
-      // No token found, redirect to login
-      router.push('/admin/login');
+      // Token exists in cookie, validate it
+      try {
+        const tokenData = JSON.parse(atob(token as string));
+        // Check if token is expired
+        if (tokenData.exp < Date.now()) {
+          router.push('/admin/login');
+          return;
+        }
+        
+        // Token is valid
+        setAdminData(tokenData);
+        setIsAuthenticated(true);
+        fetchStats();
+      } catch (error) {
+        console.error('Invalid token format:', error);
+        router.push('/admin/login');
+      }
     }
   }, [router]);
 
@@ -95,7 +129,9 @@ export default function AdminPage() {
         return (
           <div className="flex flex-col items-center justify-center h-full p-6">
             <div className="text-center max-w-2xl">
-              <h1 className="text-3xl font-bold mb-4 text-indigo-900">Welcome to the Admin Panel</h1>
+              <h1 className="text-3xl font-bold mb-4 text-indigo-900">
+                Welcome {adminData?.username ? `${adminData.username}` : ''} to the Admin Panel
+              </h1>
               <p className="text-lg text-gray-700 mb-8">
                 Manage players, tournaments, and view statistics for your SpiritX platform.
               </p>
