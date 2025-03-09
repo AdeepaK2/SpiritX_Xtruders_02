@@ -9,8 +9,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('Received request body:', body);
     
-    const { username, email, password } = body;
-    console.log('Extracted fields:', { username, email, password });
+    const { username, email, password, profileIcon } = body;
+    console.log('Extracted fields:', { username, email, password, profileIcon });
 
     // Validate input
     if (!username || !email || !password) {
@@ -49,16 +49,21 @@ export async function POST(request: NextRequest) {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // Validate profileIcon if provided
+    let iconValue = 1; // Default value
+    if (profileIcon !== undefined) {
+      const numIcon = Number(profileIcon);
+      if (!isNaN(numIcon) && numIcon >= 1 && numIcon <= 5) {
+        iconValue = numIcon;
+      }
+    }
+
     // Create new user with additional fields
     const newUser = new User({
       username: username.trim(),
       email: email.trim(),
       password: hashedPassword,
-      profileImage: {  // Initialize with empty image data
-        data: null,
-        contentType: null,
-        uploadDate: null
-      },
+      profileIcon: iconValue, // Use the provided icon or default
       budget: 9000000,
       accountCreationDate: new Date(),
       lastLoginDate: new Date()
@@ -66,7 +71,8 @@ export async function POST(request: NextRequest) {
     
     console.log('About to save user:', { 
       username: newUser.username, 
-      email: newUser.email 
+      email: newUser.email,
+      profileIcon: newUser.profileIcon
     });
 
     // Save user to database
