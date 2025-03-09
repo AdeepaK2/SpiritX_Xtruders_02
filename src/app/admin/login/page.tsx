@@ -29,7 +29,7 @@ const AdminLogin = () => {
       }
 
       localStorage.setItem("adminToken", data.token);
-      router.push("/admin/dashboard");
+      router.push("/admin");
     } catch (err: any) {
       setError(err.message);
     } finally {
