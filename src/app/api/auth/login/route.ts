@@ -1,37 +1,88 @@
-import user from "@/models/userSchema";
-import connect from "@/utils/db";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
+import connect from '@/utils/db';
+import User from '@/models/userSchema';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { cookies } from 'next/headers';
 
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
-
-export async function POST(req: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const { email, password } = await request.json();
+    
+    console.log("Login attempt for:", email);
+    
+    // Validate request
+    if (!email || !password) {
+      console.log("Missing email or password");
+      return NextResponse.json({
+        success: false,
+        error: "Email and password are required"
+      }, { status: 400 });
+    }
+
+    // Connect to database
     await connect();
-    const { email, password } = await req.json();
-
-    const existingUser = await user.findOne({ email });
-    if (!existingUser) {
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    
+    // Find user by email
+    const user = await User.findOne({ email });
+    
+    if (!user) {
+      console.log("User not found:", email);
+      return NextResponse.json({
+        success: false,
+        error: "Invalid email or password"
+      }, { status: 401 });
     }
-
-    const isMatch = await bcrypt.compare(password, existingUser.password);
-    if (!isMatch) {
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    
+    console.log("User found:", user._id);
+    
+    // Compare passwords
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      console.log("Invalid password for user:", email);
+      return NextResponse.json({
+        success: false,
+        error: "Invalid email or password"
+      }, { status: 401 });
     }
-
-    const token = jwt.sign({ userId: existingUser._id }, JWT_SECRET, { expiresIn: "1h" });
-
-    // ✅ Return `userId` along with the token
-    return NextResponse.json({ 
-      message: "Login successful", 
-      token, 
-      userId: existingUser._id.toString()  // Ensure userId is a string
-    }, { status: 200 });
-
-  } catch (error) {
-    console.error("Login Error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    
+    // Create JWT token
+    const token = jwt.sign(
+      { userId: user._id, email: user.email },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '7d' }
+    );
+    
+    // Update last login date
+    user.lastLoginDate = new Date();
+    await user.save();
+    
+    // Set cookie
+    const cookieStore = await cookies();
+    cookieStore.set({
+      name: 'authToken',
+      value: token,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/'
+    });
+    
+    const userId = user._id.toString();
+    console.log("Login successful. Returning userId:", userId);
+    
+    // Return success with user ID
+    return NextResponse.json({
+      success: true,
+      message: "Login successful",
+      userId: userId
+    });
+    
+  } catch (error: any) {
+    console.error("Login error:", error);
+    return NextResponse.json({
+      success: false,
+      error: "An error occurred during login"
+    }, { status: 500 });
   }
 }
