@@ -1,4 +1,4 @@
-import user from "@/models/User";
+import user from "@/models/userSchema";
 import connect from "@/utils/db";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -11,21 +11,21 @@ export async function POST(req: Request) {
     await connect();
     const { email, password } = await req.json();
 
-    const uSer = await user.findOne({ email });
-    if (!uSer) {
+    const existingUser = await user.findOne({ email });
+    if (!existingUser) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
-    const isMatch = await bcrypt.compare(password, uSer.password);
+    const isMatch = await bcrypt.compare(password, existingUser.password);
     if (!isMatch) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
-    const token = jwt.sign({ userId: uSer._id }, JWT_SECRET, { expiresIn: "1h" });
+    const token = jwt.sign({ userId: existingUser._id }, JWT_SECRET, { expiresIn: "1h" });
 
     return NextResponse.json({ message: "Login successful", token }, { status: 200 });
   } catch (error) {
+    console.error("Login Error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
-

@@ -2,18 +2,18 @@
 import { useState } from "react";
 
 export default function Signup() {
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [form, setForm] = useState({ username: "", email: "", password: "" });
 
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const res = await fetch("/api/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    const data = await res.json();
-    alert(data.message || data.error);
-  };
+const handleSignup = async (e: React.FormEvent) => {
+  e.preventDefault();
+  const res = await fetch("/api/auth/signup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(form),
+  });
+  const data = await res.json();
+  alert(data.message || data.error);
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-blue-300">
@@ -26,7 +26,7 @@ export default function Signup() {
               id="username"
               type="text"
               placeholder="Enter username"
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onChange={(e) => setForm({ ...form, username: e.target.value })}
               required
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             />
@@ -72,7 +72,7 @@ export default function Signup() {
         </form>
         <p className="mt-6 text-center text-sm text-gray-600">
           Already have an account?{" "}
-          <a href="/Login" className="font-medium text-indigo-600 hover:text-indigo-500">
+          <a href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
             Log in
           </a>
         </p>
